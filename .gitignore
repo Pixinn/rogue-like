@@ -1,0 +1,7 @@
+.vscode/
+*.out
+*.a2
+*.o
+*.map
+*.bak
+*.s
