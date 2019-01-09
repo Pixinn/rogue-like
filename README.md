@@ -18,7 +18,7 @@ Just type
 
 This will produce *bin/escape.a2* which is a binary executable for Apple's II PRODOS.
 
-##Prerequisite in order to build:
+## Prerequisite in order to build:
 
 The [cc65 compiler suite](https://github.com/cc65/cc65), with the environment variable *CC65_HOME* set to its folder
 
