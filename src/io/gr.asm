@@ -1,4 +1,4 @@
-; Copyright (C) 2018 Christophe Meneboeuf <christophe@xtof.info>
+; Copyright (C) 2019 Christophe Meneboeuf <christophe@xtof.info>
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -14,18 +14,35 @@
 ; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-.define FAC1     ZERO_7_1
-.define FAC2     ZERO_7_2
+.export Clear_Gr1
 
-.import mul8
-.import Modulus
 
-; Inverts a positive number to its 2's complement counterpart
-; The bits are all reversed then one is added 
-; param : number to be inverted in in A
-; result : in A
-.macro NEG 
-    eor #$FF ; %11111111 to reverse bits
-    clc
-    adc #$01
-.endmacro
+.CODE
+
+;@brief Clears GR1 screen
+; BEWARE : It will fill the "holes" with 0s
+Clear_Gr1:
+
+    lda #0      ; black    
+    ldx #0
+clear_gr1_1:    
+    sta $400, X
+    inx
+    bne clear_gr1_1
+    ldx #0
+clear_gr1_2:    
+    sta $500, X
+    inx
+    bne clear_gr1_2
+    ldx #0
+clear_gr1_3:    
+    sta $600, X
+    inx
+    bne clear_gr1_3
+    ldx #0
+clear_gr1_4:
+    sta $700, X
+    inx
+    bne clear_gr1_4   
+
+    rts

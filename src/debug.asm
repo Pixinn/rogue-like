@@ -1,7 +1,10 @@
+.include "memory.inc"
+
 ; nb of bytes to be displayed in DBG_TRACES[0]
 .export DBG_TRACE
 ; bytes to be displayed
 .export DBG_TRACES
+
 
 .CODE
 .define STROUT $DB3A ; Applesoft: OUTPUTS AY-POINTED NULL TERMINATED STRING
@@ -39,3 +42,6 @@ str_space:  .byte     " ", 0
 
 .BSS
 DBG_TRACES: .res 7      ; bytes to be displayed by TRACE
+
+
+

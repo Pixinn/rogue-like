@@ -5,6 +5,7 @@
 .define FAC2     ZERO_7_2
 
 .export mul8
+.export Modulus
 
 .CODE
 
@@ -28,4 +29,20 @@ m1:     ror
         dex
         bpl m0
         ldx FAC1
+        rts
+
+
+
+
+; Returns A % X in A
+; Source: http://forum.6502.org/viewtopic.php?t=130
+Modulus:
+        sec
+        stx FAC2
+lbl_modulus:
+        sbc FAC2
+        bcs lbl_modulus
+
+        adc FAC2
+
         rts

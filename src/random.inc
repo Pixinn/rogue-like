@@ -1,7 +1,6 @@
 
-; Enter with:
-;   accumulator = modulus
-;
-; Exit with:
-;   accumulator = random number, 0 <= accumulator < modulus
-.import random8
+
+;   A = random number
+.import Random8
+
+.import Random8_Init
