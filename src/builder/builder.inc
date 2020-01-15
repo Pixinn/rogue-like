@@ -1,4 +1,4 @@
-; Copyright (C) 2018 Christophe Meneboeuf <christophe@xtof.info>
+; Copyright (C) 2019 Christophe Meneboeuf <christophe@xtof.info>
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -13,19 +13,7 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-.define FAC1     ZERO_7_1
-.define FAC2     ZERO_7_2
-
-.import mul8
-.import Modulus
-
-; Inverts a positive number to its 2's complement counterpart
-; The bits are all reversed then one is added 
-; param : number to be inverted in in A
-; result : in A
-.macro NEG 
-    eor #$FF ; %11111111 to reverse bits
-    clc
-    adc #$01
-.endmacro
+.import Get_Size_Maze
+.import Init_Dimensions_Maze
+.import Build_Level
+.import Rooms

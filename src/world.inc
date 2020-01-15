@@ -4,22 +4,21 @@
 ; or alive, such as a monster
 
 
-.define WIDTH_MAZE 64
-.define HEIGHT_MAZE 40
-.define SIZE_BORDER 0
-.define WIDTH_WORLD  WIDTH_MAZE + 2*SIZE_BORDER
-.define HEIGHT_WORLD HEIGHT_MAZE + 2*SIZE_BORDER
+.define MAXIMUM_WIDTH_MAZE 64   ; must be a power of 2
+.define MAXIMUM_HEIGHT_MAZE 64  ; must be a power of 2
+.define WIDTH_WORLD  64
+.define HEIGHT_WORLD 64
 
 
 .enum ACTORS 
 
     PLAYER = 0
     
-    FLOOR_BLACK = 1
-    FLOOR_ORANGE
-    FLOOR_VIOLET
-    FLOOR_BLUE
-    WALKABLE = FLOOR_BLUE ; Player won't be allowed to go on anything > WALKABLE
+    FLOOR_1 = 1
+    FLOOR_2
+    FLOOR_3
+    FLOOR_4
+    WALKABLE = FLOOR_4 ; Player won't be allowed to go on anything > WALKABLE
 
     NOT_WALKABLE
     NOT_TRANSPARENT = NOT_WALKABLE

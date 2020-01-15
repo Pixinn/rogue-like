@@ -17,8 +17,10 @@
 
 .include "world.inc"
 .include "display.inc"
+.include "display_map.inc"
 .include "memory.inc"
 .include "monitor.inc"
+
 
 .export game_loop
 
@@ -39,9 +41,17 @@
 .define KEY_LEFT    $CA
 .define KEY_DOWN    $CB
 .define KEY_RIGHT   $CC
+.define TAB         $89
+
 
 .CODE
 
+
+    nop         ; Main can jump to a wrong game_loop's addr without this nop :/
+
+; ########### GAME ##########
+
+; @brief Main game loop
 game_loop:
 
     ldx Player_XY
@@ -58,7 +68,7 @@ kbd_loop:
     sta KEYBD_STROBE
 
     jsr key_action
-    bvc kbd_loop
+    jmp kbd_loop
 
     rts
 
@@ -72,24 +82,30 @@ key_action:
     beq move_down
     cmp #KEY_LEFT
     beq move_left
+    cmp #TAB
+    beq display_map
     rts
 
 move_up:
     jsr player_move_dey
-    bvc end_action_move
+    jmp end_action_move
 move_right:
-    jsr player_move_inx 
-    bvc end_action_move
+    jsr player_move_inx
+    jmp end_action_move
 move_down:
     jsr player_move_iny
-    bvc end_action_move
+    jmp end_action_move
 move_left:
     jsr player_move_dex
-    bvc end_action_move
+    jmp end_action_move
 
 end_action_move:            ; update player/view coordinates and refresh the display
     jsr world_set_player
     jsr set_view_coords     ; coords of the player in XY after player_move_*
     jsr view_refresh
+    rts
+
+display_map:
+    jsr Map_Loop
     rts
 

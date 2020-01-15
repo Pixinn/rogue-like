@@ -10,7 +10,7 @@ if (( $# != 3 )); then
     exit
 fi
 
-echo " . revoving previous instance of ESCAPE form the disk"
+echo " . removing previous instance of ESCAPE form the disk"
 java -jar ${1} -d ${3} ESCAPE
 
 echo " .. adding ESCAPE to the disk"

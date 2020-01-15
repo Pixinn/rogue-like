@@ -3,63 +3,23 @@
 
 .include "memory.inc"
 
-.export random8 
+.export Random8
+.export Random8_Init
+.export DBG_SEED
 
-.define TMP ZERO_2_1 ; requires 4 bytes
-.define MOD ZERO_2_5
+.define TMP RESERVED01
+
+.BSS
+
+.align 256
+T0: .res 256
+T1: .res 256
+T2: .res 256
+T3: .res 256
 
 .CODE
-;.align 256
 
-; Linear congruential pseudo-random number generator
-;
-; Get the next SEED and obtain an 8-bit random number from it
-;
-; Requires the RAND subroutine
-;
-; Enter with:
-;
-;   accumulator = modulus
-;
-; Exit with:
-;
-;   accumulator = random number, 0 <= accumulator < modulus
-;
-; MOD, TMP, TMP+1, and TMP+2 are overwritten
-;
-; Note that TMP to TMP+2 are only used after RAND is called.
-;
-random8: STA MOD    ; store modulus in MOD
-         JSR RAND   ; get next seed
-         LDA #0     ; multiply SEED by MOD
-         STA TMP+2
-         STA TMP+1
-         STA TMP
-         SEC
-         ROR MOD    ; shift out modulus, shifting in a 1 (will loop 8 times)
-R8A:     BCC R8B    ; branch if a zero was shifted out
-         CLC        ; add SEED, keep upper 8 bits of product in accumulator
-         TAX
-         LDA TMP
-         ADC SEED0
-         STA TMP
-         LDA TMP+1
-         ADC SEED1
-         STA TMP+1
-         LDA TMP+2
-         ADC SEED2
-         STA TMP+2
-         TXA
-         ADC SEED3
-R8B:     ROR        ; shift product right
-         ROR TMP+2
-         ROR TMP+1
-         ROR TMP
-         LSR MOD    ; loop until all 8 bits of MOD have been shifted out
-         BNE R8A
-         RTS
-
-
+DBG_SEED: .byte 0,0,0,0    ; MUST NOT BE RELOCATED!
 
 ; Linear congruential pseudo-random number generator
 ;
@@ -79,79 +39,87 @@ R8B:     ROR        ; shift product right
 ;   SEED2 = byte 2 of seed
 ;   SEED3 = byte 3 of seed
 ;
-; TMP, TMP+1, TMP+2 and TMP+3 are overwritten
+; TMP is overwritten
 ;
-; Assuming that (a) SEED0 to SEED3 and TMP+0 to TMP+3 are all located on page
-; zero, and (b) none of the branches cross a page boundary:
+; For maximum speed, locate each table on a page boundary
 ;
-;   Space: 106 bytes
-;   Speed: JSR RAND takes 517 cycles
+; Assuming that (a) SEED0 to SEED3 and TMP are located on page zero, and (b)
+; all four tables start on a page boundary:
 ;
-
-RAND:    CLC         ; copy SEED into TMP
-         LDA SEED0   ; and compute SEED = SEED * $10000 + SEED + 1
-         STA TMP
+;   Space: 58 bytes for the routine
+;          1024 bytes for the tables
+;   Speed: JSR RAND takes 94 cycles
+;
+Random8: CLC       ; compute lower 32 bits of:
+         LDX SEED0 ; 1664525 * ($100 * SEED1 + SEED0) + 1
+         LDY SEED1
+         LDA T0,X
          ADC #1
          STA SEED0
-         LDA SEED1
-         STA TMP+1
-         ADC #0
+         LDA T1,X
+         ADC T0,Y
          STA SEED1
-         LDA SEED2
-         STA TMP+2
-         ADC TMP
+         LDA T2,X
+         ADC T1,Y
+         STA TMP
+         LDA T3,X
+         ADC T2,Y
+         TAY       ; keep byte 3 in Y for now (for speed)
+         CLC       ; add lower 32 bits of:
+         LDX SEED2 ; 1664525 * ($10000 * SEED2)
+         LDA TMP
+         ADC T0,X
          STA SEED2
-         LDA SEED3
-         STA TMP+3
-         ADC TMP+1
+         TYA
+         ADC T1,X
+         CLC
+         LDX SEED3 ; add lower 32 bits of:
+         ADC T0,X  ; 1664525 * ($1000000 * SEED3)
          STA SEED3
-;
-; Bit 7 of $00, $19, $66, and $0D is 0, so only 6 shifts are necessary
-;
-         LDY #5
-RAND1:   ASL TMP     ; shift TMP (old seed) left
-         ROL TMP+1
-         ROL TMP+2
-         ROL TMP+3
-;
-; Get X from the RAND4 table.  When:
-;
-; X = $00, SEED = SEED + $10000 * TMP
-; X = $01, SEED = SEED + $100 * TMP
-; X = $FE, SEED = SEED + $10000 * TMP + TMP
-; X = $FF, SEED = SEED + $100 * TMP + TMP
-;
-         LDX RAND4,Y
-         BPL RAND2   ; branch if X = $00 or X = $01
-         CLC         ; SEED = SEED + TMP
-         LDA SEED0
-         ADC TMP
-         STA SEED0
-         LDA SEED1
-         ADC TMP+1
-         STA SEED1
-         LDA SEED2
-         ADC TMP+2
-         STA SEED2
-         LDA SEED3
-         ADC TMP+3
-         STA SEED3
-         INX         ; $FE -> $00, $FF -> $01
-         INX
-RAND2:   CLC
-         BEQ RAND3   ; if X = $00, SEED = SEED + TMP * $10000
-         LDA SEED1   ; SEED = SEED + TMP * $100
-         ADC TMP
-         STA SEED1
-RAND3:   LDA SEED2
-         ADC TMP,X
-         STA SEED2
-         LDA SEED3
-         ADC TMP+1,X
-         STA SEED3
-         DEY
-         BPL RAND1
          RTS
-RAND4:   .byte  $01,$01,$00,$FE,$FF,$01
-
+;
+; Generate T0, T1, T2 and T3 tables
+;
+; A different multiplier can be used by simply replacing the four bytes
+; that are commented below
+;
+; To speed this routine up (which will make the routine one byte longer):
+; 1. Delete the first INX instruction
+; 2. Replace LDA Tn-1,X with LDA Tn,X (n = 0 to 3)
+; 3. Replace STA Tn,X with STA Tn+1,X (n = 0 to 3)
+; 4. Insert CPX #$FF between the INX and BNE GT1
+;
+Random8_Init: 
+; Xtof's dbg Saving the seed
+         lda SEED0
+         sta DBG_SEED
+         lda SEED1
+         sta DBG_SEED+1
+         lda SEED2
+         sta DBG_SEED+2
+         lda SEED3
+         sta DBG_SEED+3
+; Xtof's dbg
+         LDX #0      ; 1664525 * 0 = 0
+         STX T0
+         STX T1
+         STX T2
+         STX T3
+         INX
+         CLC
+GT1:     LDA T0-1,X  ; add 1664525 to previous entry to get next entry
+         ADC #$0D    ; byte 0 of multiplier
+         STA T0,X
+         LDA T1-1,X
+         ADC #$66    ; byte 1 of multiplier
+         STA T1,X
+         LDA T2-1,X
+         ADC #$19    ; byte 2 of multiplier
+         STA T2,X
+         LDA T3-1,X
+         ADC #$00    ; byte 3 of multiplier
+         STA T3,X
+         INX         ; note: carry will be clear here
+         BNE GT1
+         RTS
 

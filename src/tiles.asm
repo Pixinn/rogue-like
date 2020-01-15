@@ -16,7 +16,7 @@
 
 .export TILES
 
-.SEGMENT "TILES"
+.SEGMENT "RODATA"
 .ALIGN 256
 
 PLAYER:
@@ -36,24 +36,7 @@ PLAYER:
 .byte 16, 16, 66, 0
 .byte 16, 16, 66, 0
 .byte 16, 20, 74, 0
-FLOOR_BLACK:
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-.byte $00, $00, $00, $00
-FLOOR_ORANGE:
+FLOOR_1:
 .byte 85, 42, 85, 42
 .byte 1, 32, 0, 0
 .byte 1, 32, 0, 0
@@ -70,7 +53,24 @@ FLOOR_ORANGE:
 .byte 16, 0, 64, 0
 .byte 16, 0, 64, 0
 .byte 16, 0, 64, 0
-FLOOR_VIOLET:
+FLOOR_2:
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+.byte $00, $00, $00, $00
+FLOOR_3:
 .byte $55, $2A, $55, $2A
 .byte $55, $2A, $55, $2A
 .byte $55, $2A, $55, $2A
@@ -87,7 +87,7 @@ FLOOR_VIOLET:
 .byte $55, $2A, $55, $2A
 .byte $55, $2A, $55, $2A
 .byte $55, $2A, $55, $2A
-FLOOR_BLUE:
+FLOOR_4:
 .byte $D5, $AA, $D5, $AA
 .byte $D5, $AA, $D5, $AA
 .byte $D5, $AA, $D5, $AA
@@ -105,23 +105,6 @@ FLOOR_BLUE:
 .byte $D5, $AA, $D5, $AA
 .byte $D5, $AA, $D5, $AA
 WALL_1:
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-.byte $7F, $7F, $7F, $7F
-WALL_2:
 .byte 197, 138, 213, 168
 .byte 197, 138, 213, 168
 .byte 197, 138, 213, 168
@@ -138,6 +121,23 @@ WALL_2:
 .byte 209, 130, 213, 168
 .byte 209, 138, 212, 168
 .byte 0, 0, 0, 0
+WALL_2:
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
+.byte $7F, $7F, $7F, $7F
 UNKNOWN:
 .byte $80, $80, $80, $80
 .byte $80, $80, $80, $80
@@ -157,9 +157,7 @@ UNKNOWN:
 .byte $80, $80, $80, $80
 
 
-.SEGMENT "DATA"
-
-
+.ALIGN 256
 ; DON"T FORGET TO UPDATE NB_TILES!!
 TILES:
-.word  PLAYER, FLOOR_BLACK, FLOOR_ORANGE, FLOOR_VIOLET, FLOOR_BLUE, WALL_1, WALL_2, UNKNOWN
+.word  PLAYER, FLOOR_1, FLOOR_2, FLOOR_3, FLOOR_4, WALL_1, WALL_2, UNKNOWN

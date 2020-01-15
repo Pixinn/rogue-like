@@ -17,6 +17,7 @@
 .include "world.inc"
 .include "memory.inc"
 .include "monitor.inc"
+.include "io/textio.inc"
 
 
 ; init the player's structures
@@ -39,7 +40,7 @@
 ; Player coordinates in the maze ([0:255], [0:255])
 .export Player_XY
 
-.import compute_maze_addr
+.import Compute_Maze_Addr
 
 
 .BSS
@@ -47,15 +48,20 @@
 Player_XY: .res 2
 
 
-
-
 .CODE
 
-; Player starts at [1:1]
+STR_GO_UP:      ASCIIZ "YOU GO NORTH"
+STR_GO_RIGHT:   ASCIIZ "YOU GO EAST"
+STR_GO_DOWN:    ASCIIZ "YOU GO SOUTH"
+STR_GO_LEFT:    ASCIIZ "YOU GO WEST"
+STR_HIT_WALL:   ASCIIZ "YOU HIT A WALL"
+
+; @brief Player initial coords
+; @param X player's x
+; @param Y player's y
 player_init:
-    ldx #1
     stx Player_XY
-    stx Player_XY+1
+    sty Player_XY+1
     rts
 
 
@@ -65,104 +71,97 @@ player_init:
 .define ADDR_IN_MAZE ZERO_2_1
 player_move_inx:
 
-    ; check if moving is possible
-    ldx Player_XY
-    ; test for border
-    cpx #WIDTH_MAZE - 1     ; last tile is always a wall... 
-    beq return_from_player_move   
     ; test that x+1 is "WALKABLE" 
+    ldx Player_XY
     ldy Player_XY+1
-    jsr compute_maze_addr   ; we get the adress for x,y then we increment x
+    jsr Compute_Maze_Addr           ; we get the adress for x,y then we increment x
     stx ADDR_IN_MAZE
     sta ADDR_IN_MAZE+1
     ldy #1                          ; will look at x+1
     lda #ACTORS::WALKABLE
     cmp (ADDR_IN_MAZE), Y
-    bcc return_from_player_move     ; carry cleared if A is strictly the lesser --> not walkable
+    bcc hit_wall                    ; carry cleared if A is strictly the lesser --> not walkable
     ldx Player_XY
     inx
     stx Player_XY                   ; walkable
-    bvc return_from_player_move
+    PRINT STR_GO_RIGHT
+    jmp return_from_player_move
 
 
 
 player_move_dex:
 
-    ; check if moving is possible
+    ; test that x-1 is "WALKABLE" 
     ldx Player_XY
-    ; test for border
-    cpx #1     ; 1st tile is always a wall... 
-    beq return_from_player_move
-    ; test that x+1 is "WALKABLE" 
     dex                     
     ldy Player_XY+1
-    jsr compute_maze_addr           ; we get the adress for x-1
+    jsr Compute_Maze_Addr           ; we get the adress for x-1
     stx ADDR_IN_MAZE
     sta ADDR_IN_MAZE+1
     ldy #0                          ; will look at x-1
     lda #ACTORS::WALKABLE
     cmp (ADDR_IN_MAZE), Y
-    bcc return_from_player_move     ; carry cleared if A is strictly the lesser --> not walkable
+    bcc hit_wall     ; carry cleared if A is strictly the lesser --> not walkable
     ldx Player_XY
     dex
     stx Player_XY                   ; walkable
-    bvc return_from_player_move
+    PRINT STR_GO_LEFT
+    jmp return_from_player_move
 
 
 ; Common code to return from the moves.
 ; Moves BRANCH to here
 return_from_player_move:
+
     ; return player's coordinates
     ldx Player_XY
     ldy Player_XY+1
     rts
+
+hit_wall:
+    PRINT STR_HIT_WALL
+    jmp return_from_player_move
     
 
 player_move_iny:
 
-    ; check if moving is possible
-    ldy Player_XY+1
-    ; test for border
-    cpy #HEIGHT_MAZE - 1     ; last tile is always a wall... 
-    beq return_from_player_move   
     ; test that y+1 is "WALKABLE" 
+    ldy Player_XY+1 
     ldx Player_XY
     iny
-    jsr compute_maze_addr ; we get the adress for x,y+1
+    jsr Compute_Maze_Addr ; we get the adress for x,y+1
     stx ADDR_IN_MAZE 
     sta ADDR_IN_MAZE+1
     ldy #0
     lda #ACTORS::WALKABLE
     cmp (ADDR_IN_MAZE), Y
-    bcc return_from_player_move     ; carry cleared if A is strictly the lesser --> not walkable
+    bcc hit_wall     ; carry cleared if A is strictly the lesser --> not walkable
     
     ldy Player_XY+1             ; walkable
     iny
     sty Player_XY+1         
-    bvc return_from_player_move
+    PRINT STR_GO_DOWN
+    jmp return_from_player_move
 
 
 player_move_dey:
 
-    ; check if moving is possible
-    ldy Player_XY+1
-    ; test for border
-    cpy #1     ; 1st tile is always a wall... 
-    beq return_from_player_move   
     ; test that y-1 is "WALKABLE" 
+    ldy Player_XY+1 
     ldx Player_XY
     dey
-    jsr compute_maze_addr ; we get the adress for x,y-1
+    jsr Compute_Maze_Addr ; we get the adress for x,y-1
     stx ADDR_IN_MAZE 
     sta ADDR_IN_MAZE+1
     ldy #0
     lda #ACTORS::WALKABLE
     cmp (ADDR_IN_MAZE), Y
-    bcc return_from_player_move     ; carry cleared if A is strictly the lesser --> not walkable
+    bcc hit_wall     ; carry cleared if A is strictly the lesser --> not walkable
     
     ldy Player_XY+1             ; walkable
     dey
     sty Player_XY+1         
+    PRINT STR_GO_UP
     bvc return_from_player_move
 
 

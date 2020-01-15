@@ -50,6 +50,7 @@
 .define VTAB	 $fc22	; Vertical tab
 .define VTABZ	 $fc24	; Vertical tab (alternate entry)
 .define HOME	 $fc58	; Home cursor and clear to end of page
+.define WAIT     $fca8  ; wait : read "Assembly Cookbook for the Apple II/IIe"
 .define RDKEY	 $fd0c	; Get an input character
 .define CROUT	 $fd8e	; Issue a carriage return
 .define PRBYTE	 $fdda	; Print a hexadecimal byte
