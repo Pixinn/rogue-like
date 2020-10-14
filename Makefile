@@ -1,7 +1,8 @@
 APPLE2_CL	:= $(CC65_HOME)/bin/cl65
 APPLE2_SRC	:= 	src/main.asm src/math.asm src/memory.asm src/random.asm \
 				src/game_loop.asm src/display.asm src/tiles.asm src/world.asm src/player.asm \
-				src/debug.asm src/builder/builder.asm src/builder/rooms.asm src/builder/maze.asm src/display_map.asm \
+				src/builder/builder.asm src/builder/rooms.asm src/builder/maze.asm src/builder/unite.asm \
+				src/debug.asm src/display_map.asm \
 				src/io/title.asm src/io/textio.asm src/io/gr.asm
 APPLE2_MAP  := escape.map
 APPLE2_CFLAGS	:= -Oirs -v -t apple2 -vm --cpu 6502

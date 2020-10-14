@@ -19,6 +19,7 @@
 
 .include "rooms.inc"
 .include "maze.inc"
+.include "unite.inc"
 .include "../io/textio.inc"
 .include "../monitor.inc"
 .include "../world.inc"
@@ -63,6 +64,7 @@ STR_ROOMS:      ASCIIZ "CARVING ROOMS..."
 STR_MAZE:       ASCIIZ "GROWING THE MAZE..."
 STR_DOORS:      ASCIIZ "OPENING DOORS..."
 STR_DEADENDS:   ASCIIZ "FILLING DEAD ENDS..."
+STR_UNITE:      ASCIIZ "UNITING THE ROOMS..."
 
 .CODE
 
@@ -242,6 +244,9 @@ Build_Level:
 
     PRINT STR_DEADENDS
     jsr Remove_Dead_Ends
+
+    PRINT STR_UNITE
+    jsr Unite_Rooms
 
     rts
 

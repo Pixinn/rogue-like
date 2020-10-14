@@ -19,6 +19,7 @@
 
 .import mul8
 .import Modulus
+.import div8
 
 ; Inverts a positive number to its 2's complement counterpart
 ; The bits are all reversed then one is added 
@@ -29,3 +30,26 @@
     clc
     adc #$01
 .endmacro
+
+
+.macro ADD16 addr, cste
+    clc
+    lda addr
+    adc cste
+    sta addr
+    lda addr+1
+    adc #0
+    sta addr+1
+.endmacro
+
+
+.macro DEC16 addr, cste
+    sec
+    lda addr
+    sbc cste
+    sta addr
+    lda addr+1
+    sbc #0
+    sta addr+1
+.endmacro
+

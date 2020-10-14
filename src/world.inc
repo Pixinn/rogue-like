@@ -7,7 +7,9 @@
 .define MAXIMUM_WIDTH_MAZE 64   ; must be a power of 2
 .define MAXIMUM_HEIGHT_MAZE 64  ; must be a power of 2
 .define WIDTH_WORLD  64
+.define NEG_WIDTH_WORLD $C0
 .define HEIGHT_WORLD 64
+.define NEG_HEIGHT_WORLD 64 $C0
 
 
 .enum ACTORS 
@@ -15,7 +17,7 @@
     PLAYER = 0
     
     FLOOR_1 = 1
-    FLOOR_2
+    FLOOR_2            ; FLOOR BY DEFAULT
     FLOOR_3
     FLOOR_4
     WALKABLE = FLOOR_4 ; Player won't be allowed to go on anything > WALKABLE
