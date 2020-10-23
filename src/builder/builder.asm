@@ -82,8 +82,8 @@ choice_size_maze:
     tst_tiny:
         cmp #$C1
         bne tst_small
-        ldx #16
-        ldy #16
+        ldx #20
+        ldy #20
         rts
     tst_small:
         cmp #$C2

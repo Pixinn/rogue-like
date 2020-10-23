@@ -114,7 +114,7 @@ world_set_player:
 
     rts
 
-; Destroys ZERO_2_1, ZERO_2_2 and ZERO_2_3
+; Destroys ZERO_2_1, ZERO_2_2, ZERO_2_3 ZERO_7_1 and ZERO_7_2
 Compute_Maze_Addr:
 
     stx COORD_X

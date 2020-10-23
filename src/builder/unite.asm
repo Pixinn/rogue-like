@@ -365,8 +365,8 @@ Unite_Rooms:
 .define DELTA_Y     ZERO_5_3
 .define DELTA_X_2   ZERO_5_5
 .define DELTA_Y_2   ZERO_5_6
-.define ROOM_Y      ZERO_7_1
-.define ROOM_X      ZERO_7_2
+.define ROOM_Y      ZERO_8_1
+.define ROOM_X      ZERO_8_2
 .define D           ZERO_3
 .define ROOM_FOUND  SAVE_X
 _Connect_Room:
@@ -374,7 +374,7 @@ _Connect_Room:
     ; d = 0
     lda #0
     sta D
-    
+       
     ; delta_y = zone1_y - room->y
     ldx ROOM_FOUND
     lda Rooms, X 
@@ -403,6 +403,7 @@ _Connect_Room:
     sta DELTA_X
     end_abs_x:
     ; int dx2 = 2 * dx
+    lda DELTA_X
     asl 
     sta DELTA_X_2
 
@@ -416,6 +417,7 @@ _Connect_Room:
     sta DELTA_Y
     end_abs_y:
     ;  int dy2 = 2 * dy
+    lda DELTA_Y
     asl 
     sta DELTA_Y_2
 
@@ -470,6 +472,18 @@ _Connect_Room:
             bcc d_infequal_dx
             beq d_infequal_dx
                 ; if (d > dx)
+                ; if (*ptr_room != zone_nr && *ptr_room <= WALKABLE)  break;            
+                lda (PTR_ROOM), Y ; Y = 0
+                cmp ZONE_NR
+                beq continue_1a
+                cmp #ACTORS::WALKABLE
+                beq end
+                bpl continue_1a
+                jmp end
+                continue_1a:
+                ; *ptr_room = zone_nr
+                lda ZONE_NR
+                sta (PTR_ROOM), Y ; Y = 0
                 ; ptr_room += iy
                 patch_iy1:
                 ADD16 PTR_ROOM, #WIDTH_WORLD
@@ -482,15 +496,25 @@ _Connect_Room:
             ; if (*ptr_room != zone_nr && *ptr_room <= WALKABLE)  break;            
             lda (PTR_ROOM), Y ; Y = 0
             cmp ZONE_NR
-            beq continue_1
+            beq continue_1b
             cmp #ACTORS::WALKABLE
             beq end
-            bpl continue_1
+            bpl continue_1b
             jmp end
-            continue_1:
+            continue_1b:
             lda ZONE_NR
             sta (PTR_ROOM), Y ; Y = 0
             jmp while_1
+
+    ; end label in the middle to be reachable by the branches
+    end:
+
+    ; flood fills works on ptr_tile
+    ldx #(ZONE_0 + 1)
+    lda ZONE_NR
+    jsr _Flood_Fill
+    rts
+
     dy_sup:
         while_2:
             ; ptr_room += iy
@@ -504,8 +528,20 @@ _Connect_Room:
             cmp DELTA_Y
             bcc d_infequal_dy
             beq d_infequal_dy
-                ;if (d > dy) {
-                ;ptr_room += ix;
+                ; if (d > dy) {
+                ; if (*ptr_room != zone_nr && *ptr_room <= WALKABLE)  break;            
+                lda (PTR_ROOM), Y ; Y = 0
+                cmp ZONE_NR
+                beq continue_2a
+                cmp #ACTORS::WALKABLE
+                beq end
+                bpl continue_2a
+                jmp end
+                continue_2a:
+                ; *ptr_room = zone_nr
+                lda ZONE_NR
+                sta (PTR_ROOM), Y ; Y = 0
+                ; ptr_room += ix;
                 patch_ix2:
                 ADD16 PTR_ROOM, #1
                 ; d -= dy2
@@ -517,21 +553,12 @@ _Connect_Room:
             ; (*ptr_room != zone_nr && *ptr_room <= WALKABLE)
             lda (PTR_ROOM), Y ; Y = 0
             cmp ZONE_NR
-            beq continue_2
+            beq continue_2b
             cmp #ACTORS::WALKABLE
             beq end
-            bpl continue_2
+            bpl continue_2b
             jmp end
-            continue_2:
+            continue_2b:
             lda ZONE_NR
             sta (PTR_ROOM), Y ; Y = 0
             jmp while_2
-    end:
-
-    ; flood fills works on ptr_tile
-    ldx #(ZONE_0 + 1)
-    lda ZONE_NR
-    jsr _Flood_Fill
- 
-
-    rts

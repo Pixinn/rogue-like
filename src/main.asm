@@ -67,13 +67,13 @@ _main:
     jsr Title   ; will init the seed
 
     ; overwrite the seed to debug
-    ; lda #$E6
+    ; lda #$55
     ; sta SEED0
-    ; lda #$CE
+    ; lda #$67
     ; sta SEED1
-    ; lda #$AD
+    ; lda #$8C
     ; sta SEED2
-    ; lda #$03
+    ; lda #$5F
     ; sta SEED3
     jsr Random8_Init
 
