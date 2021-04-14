@@ -56,43 +56,20 @@ _main:
     sta SIZEH
     jsr memcpy
 
-    lda #$0
-    sta SEED0
-    lda #$0
-    sta SEED1
-    lda #$0
-    sta SEED2
-    lda #$0
-    sta SEED3
     jsr Title   ; will init the seed
 
     ; overwrite the seed to debug
-    ; lda #$55
-    ; sta SEED0
-    ; lda #$67
-    ; sta SEED1
-    ; lda #$8C
-    ; sta SEED2
-    ; lda #$5F
-    ; sta SEED3
+     ;lda #$0
+     ;sta SEED0
+     ;lda #$0
+     ;sta SEED1
+     ;lda #$0
+     ;sta SEED2
+     ;lda #$0
+     ;sta SEED3
     jsr Random8_Init
 
-
-    jsr Get_Size_Maze
-    jsr Init_Dimensions_Maze
-    jsr Build_Level
-
-
-    ; Init
-    jsr Display_Map_Init
-    ldx Rooms+2 ; Rooms[0].x
-    ldy Rooms+3 ; Rooms[0].y
-    jsr player_init
-    jsr world_init 
-    jsr view_init
-
     ; Run
-    jsr game_loop
-    
+    jsr game_loop    
 
     rts

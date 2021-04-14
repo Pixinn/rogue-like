@@ -15,7 +15,7 @@
 ; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-.include "world.inc"
+.include "world/world.inc"
 .include "memory.inc"
 .include "math.inc"
 .include "monitor.inc"

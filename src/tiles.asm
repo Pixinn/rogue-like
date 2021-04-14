@@ -104,6 +104,40 @@ FLOOR_4:
 .byte $D5, $AA, $D5, $AA
 .byte $D5, $AA, $D5, $AA
 .byte $D5, $AA, $D5, $AA
+STAIR_DOWN:
+.byte $55, $2A, $55, $2A
+.byte $01, $AA, $D4, $00
+.byte $01, $8A, $D4, $82
+.byte $71, $01, $C0, $82
+.byte $71, $79, $00, $00
+.byte $71, $79, $3C, $00
+.byte $71, $79, $3C, $1E
+.byte $71, $79, $3C, $1E
+.byte $71, $79, $3C, $1E
+.byte $71, $79, $3C, $1E
+.byte $71, $79, $3C, $1E
+.byte $71, $79, $3C, $1E
+.byte $71, $79, $3C, $1E
+.byte $71, $79, $3C, $1E
+.byte $71, $7F, $7F, $1F
+.byte $01, $8A, $95, $A8
+STAIR_UP:
+.byte $55, $2A, $55, $2A
+.byte $71, $7F, $7F, $1F
+.byte $71, $79, $D4, $82
+.byte $71, $79, $3C, $8A
+.byte $71, $79, $3C, $88
+.byte $71, $79, $3C, $1E
+.byte $71, $79, $3C, $1E
+.byte $71, $79, $3C, $1E
+.byte $71, $79, $3C, $1E
+.byte $71, $79, $3C, $1E
+.byte $70, $79, $3C, $1E
+.byte $70, $79, $3C, $1E
+.byte $70, $79, $3C, $1E
+.byte $90, $78, $3C, $1E
+.byte $D0, $A8, $3C, $1E
+.byte $D0, $A0, $94, $1E
 WALL_1:
 .byte 197, 138, 213, 168
 .byte 197, 138, 213, 168
@@ -160,4 +194,6 @@ UNKNOWN:
 .ALIGN 256
 ; DON"T FORGET TO UPDATE NB_TILES!!
 TILES:
-.word  PLAYER, FLOOR_1, FLOOR_2, FLOOR_3, FLOOR_4, WALL_1, WALL_2, UNKNOWN
+.word PLAYER
+.word FLOOR_1, FLOOR_2, FLOOR_3, FLOOR_4, FLOOR_4, FLOOR_4, STAIR_DOWN, STAIR_UP
+.word WALL_1, WALL_2, UNKNOWN

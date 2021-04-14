@@ -20,14 +20,18 @@
 .include "rooms.inc"
 .include "maze.inc"
 .include "unite.inc"
+.include "actors.inc"
 .include "../io/textio.inc"
+.include "../math.inc"
 .include "../monitor.inc"
-.include "../world.inc"
 .include "../memory.inc"
+.include "../world/world.inc"
+.include "../world/level.inc"
 
 .import World
 .import Random8
 .import Grow_Maze ; to patch
+.import Compute_Maze_Addr
 
 .export Get_Size_Maze
 .export Init_Dimensions_Maze
@@ -36,8 +40,6 @@
 .export Rooms
 .export WIDTH_MAZE
 .export HEIGHT_MAZE
-
-.define MAX_NB_ROOMS 64     ; MAX_NB_ROOMS *MUST BE* <= 64
 
 .BSS
 
@@ -65,9 +67,12 @@ STR_MAZE:       ASCIIZ "GROWING THE MAZE..."
 STR_DOORS:      ASCIIZ "OPENING DOORS..."
 STR_DEADENDS:   ASCIIZ "FILLING DEAD ENDS..."
 STR_UNITE:      ASCIIZ "UNITING THE ROOMS..."
+STR_ACTORS:     ASCIIZ "PLACING ACTORS..."
 
 .CODE
 
+
+; DEPRECATED!!!
 ; @brief Asks for the size of the maze
 ; Returns Width in X and Height in Y
 Get_Size_Maze:
@@ -82,32 +87,32 @@ choice_size_maze:
     tst_tiny:
         cmp #$C1
         bne tst_small
-        ldx #20
-        ldy #20
+        ldx #LEVELSIZE::TINY
+        ldy #LEVELSIZE::TINY
         rts
     tst_small:
         cmp #$C2
         bne tst_medium
-        ldx #24
-        ldy #24
+        ldx #LEVELSIZE::SMALL
+        ldy #LEVELSIZE::SMALL
         rts
     tst_medium:
         cmp #$C3
         bne tst_big
-        ldx #32
-        ldy #32
+        ldx #LEVELSIZE::NORMAL
+        ldy #LEVELSIZE::NORMAL
         rts
     tst_big:
         cmp #$C4
         bne tst_huge
-        ldx #48
-        ldy #48
+        ldx #LEVELSIZE::BIG
+        ldy #LEVELSIZE::BIG
         rts
     tst_huge:
         cmp #$C5
         bne bad_size
-        ldx #64
-        ldy #64
+        ldx #LEVELSIZE::HUGE
+        ldy #LEVELSIZE::HUGE
         rts
     bad_size:
         PRINT STR_SIZE_MAZE_3
@@ -180,25 +185,20 @@ Init_Dimensions_Maze:
     stx _build_fences + $9
     stx _build_fences + $23
     stx _build_fences + $3D
-    ; dex
-    ; dex
-    ; dex
-    ; stx Grow_Maze + $C
     ; patch HEIGHT_MAZE usage NO MORE PATCH: comment to be removed
     sty HEIGHT_MAZE
     dey
     dey
     sty _build_fences + $12
-    ; dey
-    ; dey
-    ; sty Grow_Maze + $19
     
     rts
 
 ; @brief Builds a whole level
+; @param Uses NextLevel to get the conf
+; @return player position in X and Y
 .define DST_WORLD World
 .define ADDR_TO_PATCH init_world_line + 3
-.define NB_ROOMS ZERO_8_2
+.define NB_ROOMS ZERO_9_9
 Build_Level:
 
     ; Filling World with ACTORS::WALL_1
@@ -221,6 +221,11 @@ Build_Level:
         sta ADDR_TO_PATCH + 1
         dey
         bne init_world
+    ; patching back for a future execution
+    lda #<DST_WORLD
+    sta ADDR_TO_PATCH
+    lda #>DST_WORLD
+    sta ADDR_TO_PATCH+1
     
     PRINT STR_ROOMS
     lda #MAX_NB_ROOMS+1
@@ -229,7 +234,7 @@ Build_Level:
     
     lda #ACTORS::FLOOR_1
     jsr _build_fences
-    
+
     PRINT STR_MAZE
     jsr Grow_Maze
 
@@ -247,6 +252,143 @@ Build_Level:
 
     PRINT STR_UNITE
     jsr Unite_Rooms
+
+    PRINT STR_ACTORS    
+    ; the two following defines must be the same as in Place_Actors
+    .define POS_X               ZERO_3  ; ROOM_X in Place_Actors
+    .define POS_Y               ZERO_2_4  ; ROOM_Y in Place_Actors
+    .define POS_STARDOWN_X      ZERO_5_1      
+    .define POS_STARDOWN_Y      ZERO_5_2
+    .define ACTOR               ZERO_4_1
+    .define ACTOR_NB            ZERO_4_2
+    .define CURR_ACTOR_OFFSET   ZERO_4_3
+    .define POS_PLAYER_OFFSET   ZERO_4_4
+    .define LEVEL_CONF_OFFSET   ZERO_5_3
+    .define ADDR_ACTOR          ZERO_4_3  ; 2 bytes
+
+    lda #0
+    sta ACTOR    
+    ldx NextLevel
+    stx FAC1
+    ldx #SIZEOF_CONF_LEVEL
+    stx FAC2
+    jsr mul8          ; A = offset to level conf
+    txa
+    sta LEVEL_CONF_OFFSET
+    clc
+    adc #7            ; A = offset to pos_player_enter
+    sta POS_PLAYER_OFFSET
+    tax
+    inx
+    inx               ; offset to actors[AA_NB]
+    loop_actors:
+        stx CURR_ACTOR_OFFSET
+        lda Levels, X ; actors[AA_NB]
+        sta ACTOR_NB 
+        loop_actor_nb:
+            beq end_loop_actor_nb
+
+            ldx ACTOR
+            lda ActiveActor_Tiles, X
+            ldx NB_ROOMS
+            jsr Place_Actors
+
+            ; save stair down position
+            lda ACTOR       
+            cmp #eACTORSREACTIVE::AA_STAIRDOWN
+            bne not_stair_down
+                lda POS_X
+                sta POS_STARDOWN_X
+                lda POS_Y
+                sta POS_STARDOWN_Y
+            not_stair_down:
+
+            dec ACTOR_NB            ; next
+            jmp loop_actor_nb
+        end_loop_actor_nb:
+
+    ldx CURR_ACTOR_OFFSET
+    inx
+    inc ACTOR
+    ldy ACTOR
+    cpy #eACTORSREACTIVE::AA_NB
+    bne loop_actors
+    
+    ; Set the 1st position of the player in the level
+    ldx POS_PLAYER_OFFSET
+    lda Levels, X
+    cmp #$FF
+    bne not_first_entry
+        ; Very first entrance in the level
+        lda NextLevel
+        cmp #0
+        bne not_first_level
+            ; Special case: first level
+            ; TODO avoid non empty floor...
+            ldx Rooms+2 ; Rooms[0].x
+            ldy Rooms+3 ; Rooms[0].y
+            rts
+    not_first_level:
+        ldx POS_STARDOWN_X
+        ldy POS_STARDOWN_Y
+        jsr Compute_Maze_Addr
+        ; addr offseted by - witdh_maze to access all tiles with offset        
+        sta ADDR_ACTOR+1
+        txa
+        sec
+        sbc #WIDTH_WORLD
+        sta ADDR_ACTOR
+        lda ADDR_ACTOR+1
+        sbc #0
+        sta ADDR_ACTOR+1
+        ldx POS_STARDOWN_X
+        ; NOTE: There is at least one solution, the tile is not surrounded!
+        ; if (World[pos_stair_down.y][pos_stair_down.x - 1] == FLOOR_2)
+        ldy #(WIDTH_WORLD - 1)
+        lda (ADDR_ACTOR), Y
+        cmp #ACTORS::FLOOR_2
+        bne not_x_minus
+            ldy POS_STARDOWN_Y
+            dex
+            rts
+        not_x_minus:
+        ; if (World[pos_stair_down.y - 1][pos_stair_down.x] == FLOOR_2)
+        ldy #0
+        lda (ADDR_ACTOR), Y
+        cmp #ACTORS::FLOOR_2
+        bne not_y_minus        
+            ldy POS_STARDOWN_Y
+            dey
+            rts
+        not_y_minus:
+        ; if (World[pos_stair_down.y + 1][pos_stair_down.x] == FLOOR_2)
+        ldy #(WIDTH_WORLD * 2)
+        lda (ADDR_ACTOR), Y
+        cmp #ACTORS::FLOOR_2
+        bne not_y_plus
+            ldy POS_STARDOWN_Y
+            iny
+            rts
+        not_y_plus:
+            ldy POS_STARDOWN_Y
+            inx
+            rts
+    not_first_entry:
+        pha             ; pos_player_enter.x
+        inx
+        lda Levels, X   ; pos_player_enter.y
+        tay
+        pla
+        tax
+        rts
+
+
+    ; ldx NB_ROOMS
+    ; lda #ACTORS::STAIR_DOWN
+    ; jsr Place_Actors
+    ; lda #ACTORS::STAIR_UP
+    ; ldx NB_ROOMS
+    ; jsr Place_Actors
 
     rts
 

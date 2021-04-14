@@ -57,7 +57,18 @@
 .define ZERO_7_2    $CF
 
 .define ZERO_8_1    $D6 
-.define ZERO_8_2    $D7 
+.define ZERO_8_2    $D7
+
+.define ZERO_9_1    $F0
+.define ZERO_9_2    $F1
+.define ZERO_9_3    $F2
+.define ZERO_9_4    $F3
+.define ZERO_9_5    $F4
+.define ZERO_9_6    $F5
+.define ZERO_9_7    $F6
+.define ZERO_9_8    $F7
+.define ZERO_9_9    $F8
+.define ZERO_9_10   $F9
 
 ; ************ I/O ************
 .define KEYBD           $C000

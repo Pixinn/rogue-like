@@ -14,12 +14,13 @@
 ; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-
-.include "world.inc"
+.include "world/level.inc"
+.include "world/world.inc"
 .include "display.inc"
 .include "display_map.inc"
 .include "memory.inc"
 .include "monitor.inc"
+.include "common.inc"
 
 
 .export game_loop
@@ -28,6 +29,7 @@
 .import set_view_coords
 .import view_refresh
 ; player
+.import player_move
 .import player_move_inx
 .import player_move_iny
 .import player_move_dex
@@ -35,6 +37,13 @@
 .import Player_XY
 ; world
 .import world_set_player
+
+; ************
+.include "builder/builder.inc"
+.import world_init
+.import player_init
+.import view_init
+; ************
 
 
 .define KEY_UP      $C9
@@ -46,7 +55,6 @@
 
 .CODE
 
-
     nop         ; Main can jump to a wrong game_loop's addr without this nop :/
 
 ; ########### GAME ##########
@@ -54,23 +62,49 @@
 ; @brief Main game loop
 game_loop:
 
-    ldx Player_XY
-    ldy Player_XY+1
+    jsr levels_init
 
-    jsr world_set_player
-    jsr set_view_coords    
-    jsr view_refresh
+    lda #0
+    sta NextLevel
 
-    ; waiting for a key to be pressed
-kbd_loop:
-        lda KEYBD
-        bpl kbd_loop  ; bit #8 is set when a character is present (thus A < 0)
-    sta KEYBD_STROBE
+    level_loop:
+        jsr level_enter ; Uses NextLevel as level number
 
-    jsr key_action
-    jmp kbd_loop
+        ; *****************
+    ;   jsr Build_Level
+        jsr Display_Map_Init
+        ; ldx Rooms+2 ; Rooms[0].x
+        ; ldy Rooms+3 ; Rooms[0].y
+        ; jsr player_init
+        jsr world_init 
+        jsr view_init
+        ; *****************
 
-    rts
+
+        ldx Player_XY
+        ldy Player_XY+1
+
+        jsr world_set_player
+        jsr set_view_coords    
+        jsr view_refresh
+
+        ; waiting for a key to be pressed
+        kbd_loop:
+            lda KEYBD
+            bpl kbd_loop  ; bit #8 is set when a character is present (thus A < 0)
+            sta KEYBD_STROBE
+
+            jsr key_action
+
+            lda ExitLevel
+            cmp TRUE
+            bne kbd_loop
+
+            jsr level_exit
+
+            jmp level_loop
+
+        rts
 
     ; action on key pressed
 key_action:
@@ -87,23 +121,41 @@ key_action:
     rts
 
 move_up:
-    jsr player_move_dey
+    ldx Player_XY
+    ldy Player_XY+1
+    dey
+    jsr player_move
+    ; jsr player_move_dey
     jmp end_action_move
 move_right:
-    jsr player_move_inx
+    ldx Player_XY    
+    ldy Player_XY+1
+    inx
+    jsr player_move
+    ; jsr player_move_inx
     jmp end_action_move
 move_down:
-    jsr player_move_iny
+    ldx Player_XY
+    ldy Player_XY+1
+    iny
+    jsr player_move
+    ; jsr player_move_iny
     jmp end_action_move
 move_left:
-    jsr player_move_dex
+    ldx Player_XY
+    ldy Player_XY+1
+    dex
+    jsr player_move
+    ; jsr player_move_dex
     jmp end_action_move
 
 end_action_move:            ; update player/view coordinates and refresh the display
     jsr world_set_player
     jsr set_view_coords     ; coords of the player in XY after player_move_*
-    jsr view_refresh
+    jsr view_refresh    
     rts
+
+
 
 display_map:
     jsr Map_Loop

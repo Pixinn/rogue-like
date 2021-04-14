@@ -14,9 +14,10 @@
 ; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 .include "../memory.inc"
-.include "../world.inc"
 .include "../random.inc"
 .include "../math.inc"
+.include "../common.inc"
+.include "../world/world.inc"
 
 
 .export Grow_Maze
@@ -30,8 +31,6 @@
 ; using HGR2 space as the stack
 ; Stack contains pointers to tiles (2 byte long)
 .define STACK_ADDR  $3FFE   ; Will be 2 byte incremented before 1st push
-.define FALSE #0
-.define TRUE #1
 
 
 .define Y_TILE ZERO_2_4

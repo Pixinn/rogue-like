@@ -16,8 +16,9 @@
 
 .include "../memory.inc"
 .include "../random.inc"
-.include "../world.inc"
 .include "../math.inc"
+.include "../common.inc"
+.include "../world/world.inc"
 
 .export Carve_Rooms
 .export Connect_Rooms
@@ -28,9 +29,6 @@
 .import WIDTH_MAZE
 .import HEIGHT_MAZE
 
-
-.define TRUE #1
-.define FALSE #0
 
 .BSS
 

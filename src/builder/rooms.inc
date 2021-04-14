@@ -16,3 +16,5 @@
 
 .import Carve_Rooms
 .import Connect_Rooms
+
+.define MAX_NB_ROOMS 64     ; MAX_NB_ROOMS *MUST BE* <= 64 and a power of 2

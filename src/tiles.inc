@@ -18,7 +18,6 @@
 
 .import TILES
 
-.define NB_TILES 8
 
 
 

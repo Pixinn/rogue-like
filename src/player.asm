@@ -14,14 +14,20 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-.include "world.inc"
+
+.include "common.inc"
 .include "memory.inc"
 .include "monitor.inc"
 .include "io/textio.inc"
+.include "world/world.inc"
 
 
 ; init the player's structures
 .export player_init
+
+; exectutes the tile's reaction and updates the player's position if possible
+; Destroys ZEROS_2_1 -> 2_5
+.export player_move
 
 ; All the following functions returns the new player position:
 ; x in X and y in Y
@@ -41,6 +47,8 @@
 .export Player_XY
 
 .import Compute_Maze_Addr
+.import Reactions_lsb
+.import Reactions_msb
 
 
 .BSS
@@ -64,11 +72,50 @@ player_init:
     sty Player_XY+1
     rts
 
+; @param X target tile's x
+; @param Y target tile's y
+; @return TRUE in A if the player can move to the tile, FALE otherwise
+.define ADDR_IN_MAZE    ZERO_2_1    ; 2 bytes
+.define NEW_PLAYER_XY   ZERO_2_4    ; 2 bytes
+player_move:
+
+    stx NEW_PLAYER_XY
+    sty NEW_PLAYER_XY+1
+
+    jsr Compute_Maze_Addr
+    
+    ; get the actor
+    stx ADDR_IN_MAZE
+    sta ADDR_IN_MAZE+1
+    ldy #0
+    lda (ADDR_IN_MAZE), Y
+    tax
+    
+    ; get the reaction address
+    lda Reactions_lsb, X
+    sta FUNC_REACTION + 1
+    lda Reactions_msb, X
+    sta FUNC_REACTION+2
+
+    FUNC_REACTION : jsr 0
+    
+    cmp TRUE
+    bne end_player_move
+    ldx NEW_PLAYER_XY
+    stx Player_XY
+    ldy NEW_PLAYER_XY+1
+    sty Player_XY+1 
+    
+end_player_move:
+    ldx Player_XY
+    ldy Player_XY+1
+    
+    rts
+
 
 ; !!! ALL THE MOVE FUNCTION HAVE TO BE GROUPED TOGHETHER
 ; AS THERE IS A COMMON RETURN POINT TO WHICH THEY BRANHC (KEEP PC's DISTANCE < 127) !!!
 
-.define ADDR_IN_MAZE ZERO_2_1
 player_move_inx:
 
     ; test that x+1 is "WALKABLE" 

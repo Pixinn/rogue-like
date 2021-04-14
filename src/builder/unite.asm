@@ -19,9 +19,10 @@
 .include "rooms.inc"
 .include "maze.inc"
 .include "../io/textio.inc"
-.include "../world.inc"
 .include "../memory.inc"
 .include "../math.inc"
+.include "../common.inc"
+.include "../world/world.inc"
 
 .import World
 .import Rooms
@@ -44,9 +45,6 @@
 .define CPT_X     ZERO_2_5
 .define CPT_Y     ZERO_2_6
 
-
-.define FALSE #0
-.define TRUE #1
 
 .define QUEUE_ADDR $4000
 
@@ -361,13 +359,13 @@ Unite_Rooms:
     sta address2+9  ; sbc #0
 .endmacro
 
-.define DELTA_X     ZERO_5_2
-.define DELTA_Y     ZERO_5_3
-.define DELTA_X_2   ZERO_5_5
-.define DELTA_Y_2   ZERO_5_6
-.define ROOM_Y      ZERO_8_1
-.define ROOM_X      ZERO_8_2
-.define D           ZERO_3
+.define DELTA_X     ZERO_9_1
+.define DELTA_Y     ZERO_9_2
+.define DELTA_X_2   ZERO_9_3
+.define DELTA_Y_2   ZERO_9_4
+.define ROOM_Y      ZERO_9_5
+.define ROOM_X      ZERO_9_6
+.define D           ZERO_9_7
 .define ROOM_FOUND  SAVE_X
 _Connect_Room:
 

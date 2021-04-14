@@ -5,6 +5,8 @@
 
 .export Random8
 .export Random8_Init
+.export Random8_RestoreRandomness
+.export Random8_SaveRandomness
 .export DBG_SEED
 
 .define TMP RESERVED01
@@ -12,10 +14,11 @@
 .BSS
 
 .align 256
-T0: .res 256
-T1: .res 256
-T2: .res 256
-T3: .res 256
+T0:     .res 256
+T1:     .res 256
+T2:     .res 256
+T3:     .res 256
+T0COPY: .res 256
 
 .CODE
 
@@ -50,7 +53,8 @@ DBG_SEED: .byte 0,0,0,0    ; MUST NOT BE RELOCATED!
 ;          1024 bytes for the tables
 ;   Speed: JSR RAND takes 94 cycles
 ;
-Random8: CLC       ; compute lower 32 bits of:
+Random8:
+         CLC       ; compute lower 32 bits of:
          LDX SEED0 ; 1664525 * ($100 * SEED1 + SEED0) + 1
          LDY SEED1
          LDA T0,X
@@ -123,3 +127,31 @@ GT1:     LDA T0-1,X  ; add 1664525 to previous entry to get next entry
          BNE GT1
          RTS
 
+
+
+Random8_RestoreRandomness:
+
+    ldx #$FF
+restore_loop:
+    lda T0COPY, X
+    sta T0, X
+    dex
+    bne restore_loop
+    lda T0COPY, X
+    sta T0, X
+
+    rts
+
+
+Random8_SaveRandomness:
+
+    ldx #$FF
+save_loop:
+    lda T0, X
+    sta T0COPY, X
+    dex
+    bne save_loop
+    lda T0, X
+    sta T0COPY, X
+
+    rts
