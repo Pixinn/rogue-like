@@ -33,18 +33,32 @@
 .import __MAIN_LAST__
 .import __DATA_START__
 .import __DATA_SIZE__
-
-
+.import __CODE2_START__
+.import __CODE2_LAST__
 
 .CODE
 
 _main:
 
-    ; Relocate DATA from its freshly loaded location to __DATA_START__
-    ; computing DATA actual starting address
     lda #<__MAIN_LAST__
     sta FROM
     lda #>__MAIN_LAST__
+    sta FROM+1
+    lda #<__CODE2_START__
+    sta TO 
+    lda #>__CODE2_START__
+    sta TO+1
+    lda #<(__CODE2_LAST__ - __CODE2_START__)
+    sta SIZEL
+    lda #>(__CODE2_LAST__ - __CODE2_START__)
+    sta SIZEH
+    jsr memcpy
+
+    ; Relocate DATA from its freshly loaded location to __DATA_START__
+    ; computing DATA actual starting address
+    lda #<(__MAIN_LAST__ + __CODE2_LAST__ - __CODE2_START__)
+    sta FROM
+    lda #>(__MAIN_LAST__ + __CODE2_LAST__ - __CODE2_START__)
     sta FROM+1
     lda #<__DATA_START__
     sta TO 

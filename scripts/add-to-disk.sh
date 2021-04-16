@@ -10,10 +10,16 @@ if (( $# != 3 )); then
     exit
 fi
 
-echo " . removing previous instance of ESCAPE form the disk"
+# ###
+# NOTE:
+# The loader must have the same basename as the game loaded
+# ###
+echo " . removing previous instance of ESCAPE from the disk"
 java -jar ${1} -d ${3} ESCAPE
+java -jar ${1} -d ${3} ESCAPE.SYSTEM
 
-echo " .. adding ESCAPE to the disk"
+echo " .. adding ESCAPE and its loader to the disk"
 java -jar ${1} -cc65 ${3} ESCAPE BIN < ${2}
+java -jar ${1} -p ${3} ESCAPE.SYSTEM SYS < ${CC65_HOME}/target/apple2/util/loader.system
 
 echo "DONE."
