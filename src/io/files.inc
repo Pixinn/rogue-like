@@ -1,4 +1,4 @@
-; Copyright (C) 2018-2021 Christophe Meneboeuf <christophe@xtof.info>
+; Copyright (C) 2021 Christophe Meneboeuf <christophe@xtof.info>
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -14,18 +14,17 @@
 ; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
+; data
+; TODO : should remain private!!
+.import Str_FileLevelConfs
+.import Str_FileLevelsActors
+.import Param_FileOpen
+.import Param_FileOffset
+.import Param_FilesReadWrite
 
-
-; The world contains a Maze, filled with Actors
-; Actors can be static, such a a floor or a wall,
-; dynamic such as a door
-; or alive, such as a monster
-
-
-.define MAXIMUM_WIDTH_MAZE 64   ; must be a power of 2
-.define MAXIMUM_HEIGHT_MAZE 64  ; must be a power of 2
-.define WIDTH_WORLD  64
-.define NEG_WIDTH_WORLD $C0
-.define HEIGHT_WORLD 64
-.define NEG_HEIGHT_WORLD $C0
-
+; functions
+.import ReadFile
+.import LoadState
+.import SaveState
+.import ResetIsBuilt
+.import LoadCurrentLevel

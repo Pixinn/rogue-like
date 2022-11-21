@@ -20,7 +20,8 @@
 .include "rooms.inc"
 .include "maze.inc"
 .include "unite.inc"
-.include "actors.inc"
+.include "../common.inc"
+.include "../actors/actors.inc"
 .include "../io/textio.inc"
 .include "../math.inc"
 .include "../monitor.inc"
@@ -28,12 +29,15 @@
 .include "../world/world.inc"
 .include "../world/level.inc"
 
-.import World
+; code
 .import Random8
 .import Grow_Maze ; to patch
 .import Compute_Maze_Addr
+.import Place_Actors
+; data
+.import World
+.import Tile_player_standing_actor
 
-.export Get_Size_Maze
 .export Init_Dimensions_Maze
 .export Build_Level
 
@@ -69,54 +73,9 @@ STR_DEADENDS:   ASCIIZ "FILLING DEAD ENDS..."
 STR_UNITE:      ASCIIZ "UNITING THE ROOMS..."
 STR_ACTORS:     ASCIIZ "PLACING ACTORS..."
 
+
+
 .CODE
-
-
-; DEPRECATED!!!
-; @brief Asks for the size of the maze
-; Returns Width in X and Height in Y
-Get_Size_Maze:
-    
-    ; User input
-    PRINT STR_SIZE_MAZE_1
-choice_size_maze:
-    PRINT STR_SIZE_MAZE_2
-    jsr Cin_Char
-
-    ; switch case over the input
-    tst_tiny:
-        cmp #$C1
-        bne tst_small
-        ldx #LEVELSIZE::TINY
-        ldy #LEVELSIZE::TINY
-        rts
-    tst_small:
-        cmp #$C2
-        bne tst_medium
-        ldx #LEVELSIZE::SMALL
-        ldy #LEVELSIZE::SMALL
-        rts
-    tst_medium:
-        cmp #$C3
-        bne tst_big
-        ldx #LEVELSIZE::NORMAL
-        ldy #LEVELSIZE::NORMAL
-        rts
-    tst_big:
-        cmp #$C4
-        bne tst_huge
-        ldx #LEVELSIZE::BIG
-        ldy #LEVELSIZE::BIG
-        rts
-    tst_huge:
-        cmp #$C5
-        bne bad_size
-        ldx #LEVELSIZE::HUGE
-        ldy #LEVELSIZE::HUGE
-        rts
-    bad_size:
-        PRINT STR_SIZE_MAZE_3
-        jmp choice_size_maze
 
 
 ; @brief Fills border walls
@@ -198,15 +157,18 @@ Init_Dimensions_Maze:
 ; @return player position in X and Y
 .define DST_WORLD World
 .define ADDR_TO_PATCH init_world_line + 3
-.define NB_ROOMS ZERO_9_9
+.define NB_ROOMS ZERO_9_9 ; use same location as Place_Actors
 Build_Level:
 
-    ; Filling World with ACTORS::WALL_1
+    lda #UNDEF
+    sta Tile_player_standing_actor
+
+    ; Filling World with eACTORTYPES::WALL_1
     ldy #HEIGHT_WORLD
     init_world:
         ldx #0
         init_world_line:
-            lda #ACTORS::WALL_1
+            lda #eACTORTYPES::WALL_1
             sta DST_WORLD, x
             inx
             cpx #WIDTH_WORLD
@@ -225,20 +187,21 @@ Build_Level:
     lda #<DST_WORLD
     sta ADDR_TO_PATCH
     lda #>DST_WORLD
-    sta ADDR_TO_PATCH+1
+    sta ADDR_TO_PATCH+1    
     
     PRINT STR_ROOMS
+
     lda #MAX_NB_ROOMS+1
     jsr Carve_Rooms
     sta NB_ROOMS
     
-    lda #ACTORS::FLOOR_1
-    jsr _build_fences
+    lda #eACTORTYPES::FLOOR_1
+    jsr _build_fences        
 
     PRINT STR_MAZE
     jsr Grow_Maze
 
-    lda #ACTORS::WALL_1
+    lda #eACTORTYPES::WALL_1
     jsr _build_fences
 
     PRINT STR_DOORS
@@ -252,50 +215,51 @@ Build_Level:
 
     PRINT STR_UNITE
     jsr Unite_Rooms
-
-    PRINT STR_ACTORS    
+      
     ; the two following defines must be the same as in Place_Actors
     .define POS_X               ZERO_3  ; ROOM_X in Place_Actors
     .define POS_Y               ZERO_2_4  ; ROOM_Y in Place_Actors
     .define POS_STARDOWN_X      ZERO_5_1      
     .define POS_STARDOWN_Y      ZERO_5_2
-    .define ACTOR               ZERO_4_1
     .define ACTOR_NB            ZERO_4_2
-    .define CURR_ACTOR_OFFSET   ZERO_4_3
-    .define POS_PLAYER_OFFSET   ZERO_4_4
-    .define LEVEL_CONF_OFFSET   ZERO_5_3
-    .define ADDR_ACTOR          ZERO_4_3  ; 2 bytes
+    .define ACTOR_ID            ZERO_9_1    ; use same location as Place_Actors
+    .define ACTOR_TYPE          ZERO_9_2    ; use same location as Place_Actors
+    .define CURR_ACTOR_OFFSET   ZERO_4_3    
+    .define ADDR_LEVEL_CONF     ZERO_5_3  ; 2 bytes
+    .define ADDR_ACTOR          ZERO_4_3  ; 2 bytes    
 
-    lda #0
-    sta ACTOR    
-    ldx NextLevel
-    stx FAC1
-    ldx #SIZEOF_CONF_LEVEL
-    stx FAC2
-    jsr mul8          ; A = offset to level conf
-    txa
-    sta LEVEL_CONF_OFFSET
+    ; place actors
+    PRINT STR_ACTORS  
+    ; offset to level conf
+    
+    lda NextLevel
+    jsr level_get_config_offset
+    pha
     clc
-    adc #7            ; A = offset to pos_player_enter
-    sta POS_PLAYER_OFFSET
-    tax
-    inx
-    inx               ; offset to actors[AA_NB]
-    loop_actors:
-        stx CURR_ACTOR_OFFSET
-        lda Levels, X ; actors[AA_NB]
+    txa
+    adc #<LevelConfigs
+    sta ADDR_LEVEL_CONF
+    pla
+    adc #>LevelConfigs
+    sta ADDR_LEVEL_CONF+1
+    lda #eACTORTYPES::LAST_STATIC + 1   ; 1st dynamic actor id            
+    sta ACTOR_ID
+    sta ACTOR_TYPE
+    tay
+    iny
+    iny                                 ; offset to actors[ACTOR_ID] in level conf
+    loop_actors:                        ; loop over actors from conf
+        sty CURR_ACTOR_OFFSET        
+        lda (ADDR_LEVEL_CONF), Y
         sta ACTOR_NB 
-        loop_actor_nb:
-            beq end_loop_actor_nb
+        loop_actor_id:             
+            beq end_loop_actor_id                       
 
-            ldx ACTOR
-            lda ActiveActor_Tiles, X
-            ldx NB_ROOMS
-            jsr Place_Actors
+            jsr Place_Actors            
 
             ; save stair down position
-            lda ACTOR       
-            cmp #eACTORSREACTIVE::AA_STAIRDOWN
+            lda ACTOR_TYPE       
+            cmp #eACTORTYPES::STAIR_DOWN
             bne not_stair_down
                 lda POS_X
                 sta POS_STARDOWN_X
@@ -303,31 +267,29 @@ Build_Level:
                 sta POS_STARDOWN_Y
             not_stair_down:
 
+            inc ACTOR_ID
             dec ACTOR_NB            ; next
-            jmp loop_actor_nb
-        end_loop_actor_nb:
+            lda ACTOR_NB
+            jmp loop_actor_id
+        end_loop_actor_id:
 
-    ldx CURR_ACTOR_OFFSET
-    inx
-    inc ACTOR
-    ldy ACTOR
-    cpy #eACTORSREACTIVE::AA_NB
+    ldy CURR_ACTOR_OFFSET
+    iny
+    inc ACTOR_TYPE
+    lda ACTOR_TYPE
+    cmp #(NB_ACTORS_MAX-1)
     bne loop_actors
-    
+
     ; Set the 1st position of the player in the level
-    ldx POS_PLAYER_OFFSET
-    lda Levels, X
-    cmp #$FF
-    bne not_first_entry
-        ; Very first entrance in the level
-        lda NextLevel
-        cmp #0
-        bne not_first_level
-            ; Special case: first level
-            ; TODO avoid non empty floor...
-            ldx Rooms+2 ; Rooms[0].x
-            ldy Rooms+3 ; Rooms[0].y
-            rts
+    ; offset to level state
+    lda NextLevel
+    cmp #0
+    bne not_first_level
+        ; Special case: first level
+        ; TODO avoid non empty floor...
+        ldx Rooms+2 ; Rooms[0].x
+        ldy Rooms+3 ; Rooms[0].y
+        rts
     not_first_level:
         ldx POS_STARDOWN_X
         ldy POS_STARDOWN_Y
@@ -346,7 +308,7 @@ Build_Level:
         ; if (World[pos_stair_down.y][pos_stair_down.x - 1] == FLOOR_2)
         ldy #(WIDTH_WORLD - 1)
         lda (ADDR_ACTOR), Y
-        cmp #ACTORS::FLOOR_2
+        cmp #eACTORTYPES::FLOOR_2
         bne not_x_minus
             ldy POS_STARDOWN_Y
             dex
@@ -355,7 +317,7 @@ Build_Level:
         ; if (World[pos_stair_down.y - 1][pos_stair_down.x] == FLOOR_2)
         ldy #0
         lda (ADDR_ACTOR), Y
-        cmp #ACTORS::FLOOR_2
+        cmp #eACTORTYPES::FLOOR_2
         bne not_y_minus        
             ldy POS_STARDOWN_Y
             dey
@@ -364,7 +326,7 @@ Build_Level:
         ; if (World[pos_stair_down.y + 1][pos_stair_down.x] == FLOOR_2)
         ldy #(WIDTH_WORLD * 2)
         lda (ADDR_ACTOR), Y
-        cmp #ACTORS::FLOOR_2
+        cmp #eACTORTYPES::FLOOR_2
         bne not_y_plus
             ldy POS_STARDOWN_Y
             iny
@@ -372,23 +334,6 @@ Build_Level:
         not_y_plus:
             ldy POS_STARDOWN_Y
             inx
-            rts
-    not_first_entry:
-        pha             ; pos_player_enter.x
-        inx
-        lda Levels, X   ; pos_player_enter.y
-        tay
-        pla
-        tax
-        rts
-
-
-    ; ldx NB_ROOMS
-    ; lda #ACTORS::STAIR_DOWN
-    ; jsr Place_Actors
-    ; lda #ACTORS::STAIR_UP
-    ; ldx NB_ROOMS
-    ; jsr Place_Actors
 
     rts
 

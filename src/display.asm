@@ -15,11 +15,13 @@
 ; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 .include "world/world.inc"
+.include "actors/actors.inc"
 .include "display.inc"
 .include "tiles.inc"
 .include "math.inc"
 .include "memory.inc"
 .include "monitor.inc"
+.include "common.inc"
 
 
 ; Init the view. To be called before anything else!
@@ -44,6 +46,8 @@
 .import Compute_Maze_Addr
 .import World
 .import Player_XY
+.import ActorTransparent
+.import ActorTypes
 
 .import DBG_TRACE
 .import DBG_TRACES
@@ -97,20 +101,6 @@ loop_view_init:
     rts
 
 
-; this routines populates View_Future, without any LOS
-_dbg_build_view:
-
-    lda #0
-    ldx #(GRID_WIDTH * GRID_HEIGHT - 1)
-    loop_build_view:
-        lda #ACTORS::PLAYER
-        sta View_Future,X
-        dex
-        bne loop_build_view
-    sta View_Future,X
-
-    rts
-
 ; this routine will create the view and populate View_Future
 ; destroys  ZERO_4_3, ZERO_4_4, ZERO_5_1, ZERO_5_2, ZERO_5_3
 ;           ZERO_5_4, ZERO_5_5, ZERO_5_6, ZERO_7_1, ZERO_7_2
@@ -120,7 +110,7 @@ _build_view:
     lda #0
     ldx #(GRID_WIDTH * GRID_HEIGHT - 1)
     loop_init_view:
-        lda #ACTORS::UNKNOWN
+        lda #eACTORTYPES::UNKNOWN
         sta View_Future,X
         dex
         bne loop_init_view
@@ -129,7 +119,7 @@ _build_view:
     ; 2 - Player
     .define OFFSET_PLAYER_IN_VIEW PLAYER_X+PLAYER_Y*GRID_WIDTH
     ldx #(OFFSET_PLAYER_IN_VIEW)
-    lda #ACTORS::PLAYER
+    lda #eACTORTYPES::PLAYER
     sta View_Future,X
 
     ; 3 - Casting rays
@@ -140,6 +130,7 @@ _build_view:
     .define SRC_TILE_IN_WORLD       ZERO_5_2    ; 2 bytes
     .define PTR_RAY                 ZERO_5_4    ; 2 bytes
     .define TMP                     ZERO_5_6
+    .define TMP2                    ZERO_7_1
 
     
     ; loading ptr_rays - 1 as it will be incremented
@@ -197,15 +188,21 @@ _build_view:
             iny
             sty TMP
             lda (PTR_RAY),Y         ; offset_view
-            tax
+            sta TMP2
             ldy #0
-            lda (SRC_TILE_IN_WORLD),Y 
-            sta View_Future,X
+            lda (SRC_TILE_IN_WORLD), Y 
+            ; sta View_Future, X          ; ptr tile in view future
             ldy TMP
             iny
-            ; break if non-transparent
-            cmp #ACTORS::NOT_TRANSPARENT
-            bcs end_loop_ray
+            ; break if non-transparent            
+            tax
+            lda ActorTypes, X
+            ldx TMP2
+            sta View_Future, X
+            tax
+            lda ActorTransparent, X
+            cmp #TRUE
+            bne end_loop_ray
             ; loop if tiles are left in the ray
             
             ldx NB_TILES_IN_RAY_LEFT

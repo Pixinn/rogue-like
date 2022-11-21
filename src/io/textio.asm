@@ -151,7 +151,7 @@ Cin_Str:
     sta TXT1_LINE23, X  ; erase the cursor
     lda #0
     sta CIN_STR, X
-    
+
     rts
 
     delete:

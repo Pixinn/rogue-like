@@ -13,7 +13,6 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-.import Get_Size_Maze
 .import Init_Dimensions_Maze
 .import Build_Level
 .import Rooms

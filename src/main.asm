@@ -20,49 +20,83 @@
 .include "display_map.inc"
 .include "builder/builder.inc"
 .include "io/textio.inc"
+.include "io/files.inc"
 
 .export _main
 
+; functions
 .import world_init
 .import player_init
 .import view_init
 .import game_loop
-
 .import Title
+.import level_reset_states
 
-.import __MAIN_LAST__
-.import __DATA_START__
+.import memcpy
+.import memset
+.import meminit
+
+; data
+.import __CODE2_LOAD__
+.import __CODE2_RUN__
+.import __CODE2_SIZE__
+.import __RODATA_LOAD__
+.import __RODATA_RUN__
+.import __RODATA_SIZE__
+.import __DATA_LOAD__
+.import __DATA_RUN__
 .import __DATA_SIZE__
-.import __CODE2_START__
-.import __CODE2_LAST__
+
+.DATA
+
+STR_EMPTY:   ASCIIZ " "
+STR_NEWGAME: ASCIIZ "(N)EW GAME"
+STR_JOURNEY: ASCIIZ "(J)OURNEY ONWARD"
+STR_NAME:    ASCIIZ "WHAT'S YOUR NAME, ADVENTURER?"
 
 .CODE
 
 _main:
 
-    lda #<__MAIN_LAST__
+    ; jsr meminit       // Uncomment to zero memory, for debug
+
+    ; Relocations after the HGR "hole"
+    ; relocating code
+    lda #<__CODE2_LOAD__
     sta FROM
-    lda #>__MAIN_LAST__
+    lda #>__CODE2_LOAD__
     sta FROM+1
-    lda #<__CODE2_START__
+    lda #<__CODE2_RUN__
     sta TO 
-    lda #>__CODE2_START__
+    lda #>__CODE2_RUN__
     sta TO+1
-    lda #<(__CODE2_LAST__ - __CODE2_START__)
+    lda #<__CODE2_SIZE__
     sta SIZEL
-    lda #>(__CODE2_LAST__ - __CODE2_START__)
+    lda #>__CODE2_SIZE__
     sta SIZEH
     jsr memcpy
-
-    ; Relocate DATA from its freshly loaded location to __DATA_START__
-    ; computing DATA actual starting address
-    lda #<(__MAIN_LAST__ + __CODE2_LAST__ - __CODE2_START__)
+    ; relocating RODATA
+    lda #<__RODATA_LOAD__
     sta FROM
-    lda #>(__MAIN_LAST__ + __CODE2_LAST__ - __CODE2_START__)
+    lda #>__RODATA_LOAD__
     sta FROM+1
-    lda #<__DATA_START__
+    lda #<__RODATA_RUN__
     sta TO 
-    lda #>__DATA_START__
+    lda #>__RODATA_RUN__
+    sta TO+1
+    lda #<__RODATA_SIZE__
+    sta SIZEL
+    lda #>__RODATA_SIZE__
+    sta SIZEH
+    jsr memcpy
+    ; relocating DATA
+    lda #<__DATA_LOAD__
+    sta FROM
+    lda #>__DATA_LOAD__
+    sta FROM+1
+    lda #<__DATA_RUN__
+    sta TO 
+    lda #>__DATA_RUN__
     sta TO+1
     lda #<__DATA_SIZE__
     sta SIZEL
@@ -70,20 +104,71 @@ _main:
     sta SIZEH
     jsr memcpy
 
-    jsr Title   ; will init the seed
+    jsr _StartMenu   ; will init the seed
 
     ; overwrite the seed to debug
-     ;lda #$0
-     ;sta SEED0
-     ;lda #$0
-     ;sta SEED1
-     ;lda #$0
-     ;sta SEED2
-     ;lda #$0
-     ;sta SEED3
+    ; lda #$0
+    ; sta SEED0
+    ; lda #$0
+    ; sta SEED1
+    ; lda #$0
+    ; sta SEED2
+    ; lda #$0
+    ; sta SEED3
+
     jsr Random8_Init
 
     ; Run
     jsr game_loop    
+
+    rts
+
+
+; @brief Starting game menu
+_StartMenu:
+
+    ; Scrolling Title
+    jsr Title
+
+    ; New game or continue
+    lda #>STR_NEWGAME
+    ldx #<STR_NEWGAME
+    jsr Print
+    lda #>STR_JOURNEY
+    ldx #<STR_JOURNEY
+    jsr Print
+kbd_wait:
+        lda KEYBD
+        bpl kbd_wait
+
+    sta KEYBD_STROBE
+    
+    cmp #($4E + $80)    ; 'N'
+    beq new_game
+    cmp #($6E + $80)    ; 'n'
+    beq new_game
+
+    cmp #($4A + $80)    ; 'J'
+    beq journey_onward    
+    cmp #($6A + $80)    ; 'j'
+    beq journey_onward    
+    
+    bne kbd_wait
+
+journey_onward:
+    jsr LoadCurrentLevel
+    jmp start_menu_end
+
+new_game:   
+    ; Ask for name
+    lda #>STR_NAME
+    ldx #<STR_NAME
+    jsr Print
+    jsr Cin_Str     ; Init seed
+
+    ; delete progress
+    jsr level_reset_states
+
+start_menu_end:
 
     rts

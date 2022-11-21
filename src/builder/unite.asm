@@ -23,6 +23,7 @@
 .include "../math.inc"
 .include "../common.inc"
 .include "../world/world.inc"
+.include "../actors/actors.inc"
 
 .import World
 .import Rooms
@@ -33,9 +34,7 @@
 
 .export Unite_Rooms
 
-.BSS
 
-.DATA 
 
 .CODE
 
@@ -62,7 +61,7 @@ _Flood_Fill :
     ldy #0
     cmp (PTR_TILE), Y   ; if (*ptr_tile != replaced) return;
     beq fill_1
-    lda FALSE
+    lda #FALSE
     rts
 
 fill_1:
@@ -114,7 +113,7 @@ fill_1:
         lda FILL_NR
         sta (PTR_TILE_LOCAL),Y
         ; *(++ptr_queue) = tile_w
-        ADD16 PTR_QUEUE, #2
+        ADD16 PTR_QUEUE, #2, #0
         clc
         lda #1
         adc PTR_TILE_LOCAL
@@ -136,7 +135,7 @@ fill_1:
         lda FILL_NR
         sta (PTR_TILE_LOCAL),Y
         ; *(++ptr_queue) = tile_tile_east
-        ADD16 PTR_QUEUE, #2
+        ADD16 PTR_QUEUE, #2, #0
         sec
         lda PTR_TILE_LOCAL
         sbc #1 
@@ -157,7 +156,7 @@ fill_1:
         lda FILL_NR
         sta (PTR_TILE_LOCAL),Y
         ; *(++ptr_queue) = tile_tile_north
-        ADD16 PTR_QUEUE, #2
+        ADD16 PTR_QUEUE, #2, #0
         sec
         lda PTR_TILE_LOCAL
         sbc #WIDTH_WORLD
@@ -178,7 +177,7 @@ fill_1:
         lda FILL_NR
         sta (PTR_TILE_LOCAL),Y
         ; *(++ptr_queue) = tile_tile_south
-        ADD16 PTR_QUEUE, #2
+        ADD16 PTR_QUEUE, #2, #0
         clc
         lda #WIDTH_WORLD
         adc PTR_TILE_LOCAL
@@ -194,7 +193,7 @@ fill_1:
 
 
 end_fill:
-    lda TRUE
+    lda #TRUE
     rts
 
 
@@ -202,7 +201,7 @@ end_fill:
 .define ROOM_NR  ZERO_3
 .define SAVE_X   ZERO_4_1
 .define PTR_ROOM ZERO_4_2               ; 2 bytes
-.define ZONE_0   ACTORS::FLOOR_1        ; 1st useful zone: ZONE_1
+.define ZONE_0   eACTORTYPES::FLOOR_1        ; 1st useful zone: ZONE_1
 Unite_Rooms:
 
     ; *** flood fill room to identify separated zones ***
@@ -226,13 +225,13 @@ Unite_Rooms:
         ldx ZONE_NR
         lda #ZONE_0
         jsr _Flood_Fill
-        cmp TRUE
+        cmp #TRUE
         bne loop_flood_next
         inc ZONE_NR
 
     loop_flood_next:
         ;next tile
-        ADD16 PTR_TILE, #1
+        ADD16 PTR_TILE, #1, #0
         ; end line?
         inc CPT_X
         ldx CPT_X
@@ -241,7 +240,7 @@ Unite_Rooms:
         ldx #0
         stx CPT_X
         ; next
-        ADD16 PTR_TILE, #1
+        ADD16 PTR_TILE, #1, #0
         ; the end?
         inc CPT_Y
         ldy CPT_Y
@@ -460,7 +459,7 @@ _Connect_Room:
         while_1:
             ; ptr_room += ix
             patch_ix1:
-            ADD16 PTR_ROOM, #1
+            ADD16 PTR_ROOM, #1, #0
             ; d += dy2
             clc
             lda DELTA_Y_2
@@ -474,7 +473,7 @@ _Connect_Room:
                 lda (PTR_ROOM), Y ; Y = 0
                 cmp ZONE_NR
                 beq continue_1a
-                cmp #ACTORS::WALKABLE
+                cmp #eACTORTYPES::LAST_FLOOR
                 beq end
                 bpl continue_1a
                 jmp end
@@ -484,7 +483,7 @@ _Connect_Room:
                 sta (PTR_ROOM), Y ; Y = 0
                 ; ptr_room += iy
                 patch_iy1:
-                ADD16 PTR_ROOM, #WIDTH_WORLD
+                ADD16 PTR_ROOM, #WIDTH_WORLD, #0
                 ; d -= dx2
                 sec
                 lda D 
@@ -495,7 +494,7 @@ _Connect_Room:
             lda (PTR_ROOM), Y ; Y = 0
             cmp ZONE_NR
             beq continue_1b
-            cmp #ACTORS::WALKABLE
+            cmp #eACTORTYPES::LAST_FLOOR
             beq end
             bpl continue_1b
             jmp end
@@ -517,7 +516,7 @@ _Connect_Room:
         while_2:
             ; ptr_room += iy
             patch_iy2:
-            ADD16 PTR_ROOM, #WIDTH_WORLD
+            ADD16 PTR_ROOM, #WIDTH_WORLD, #0
             ; d += dx2
             clc
             lda DELTA_X_2
@@ -531,7 +530,7 @@ _Connect_Room:
                 lda (PTR_ROOM), Y ; Y = 0
                 cmp ZONE_NR
                 beq continue_2a
-                cmp #ACTORS::WALKABLE
+                cmp #eACTORTYPES::LAST_FLOOR
                 beq end
                 bpl continue_2a
                 jmp end
@@ -541,7 +540,7 @@ _Connect_Room:
                 sta (PTR_ROOM), Y ; Y = 0
                 ; ptr_room += ix;
                 patch_ix2:
-                ADD16 PTR_ROOM, #1
+                ADD16 PTR_ROOM, #1, #0
                 ; d -= dy2
                 sec
                 lda D 
@@ -552,7 +551,7 @@ _Connect_Room:
             lda (PTR_ROOM), Y ; Y = 0
             cmp ZONE_NR
             beq continue_2b
-            cmp #ACTORS::WALKABLE
+            cmp #eACTORTYPES::LAST_FLOOR
             beq end
             bpl continue_2b
             jmp end

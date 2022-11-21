@@ -16,11 +16,12 @@
 
 
 .include "world.inc"
+.include "../common.inc"
+.include "../actors/actors.inc"
 .include "../tiles.inc"
 .include "../random.inc"
 .include "../math.inc"
 .include "../memory.inc"
-
 
 
 .export World
@@ -43,8 +44,11 @@
 ; DESTROYS A,X,Y, ZERO_2_1, ZERO_2_2, ZERO_2_3
 .export Compute_Maze_Addr
 
+; #TRUE if an object has been picked by the player
+.export World_PickedObject
 
-.define TILE_NR     ZERO_2_1
+.export Tile_player_standing_actor
+
 .define COORD_X     ZERO_2_1
 .define COORD_Y     ZERO_2_2
 .define OFFSET      ZERO_2_2
@@ -53,10 +57,13 @@
 .BSS
 
 ; The tile where the player stands
-.struct Tile_player_standing
-    addr     .word   ; adress of the location 
-    actor     .byte  ; actor on the location tile
-.endstruct
+; The two memory locations must be adjacent
+Tile_player_standing_addr:  .res 2
+Tile_player_standing_actor: .res 1
+
+.DATA
+
+World_PickedObject: .byte 0
 
 .CODE
 
@@ -66,51 +73,65 @@ world_init:
     ; Saving the first tile on which the player stands
     ; FIXME player could be standing anywhere on any type of floor
     jsr Compute_Maze_Addr
-    stx Tile_player_standing::addr
-    sta Tile_player_standing::addr+1
-    stx ZERO_2_1
-    sta ZERO_2_1+1
-    ldy #0
-    lda (ZERO_2_1), Y
-    sta Tile_player_standing::actor
+    stx Tile_player_standing_addr
+    sta Tile_player_standing_addr+1
 
+    lda Tile_player_standing_actor
+    cmp #UNDEF
+    bne world_init_end
+        lda #eACTORTYPES::FLOOR_2
+        sta Tile_player_standing_actor
+
+world_init_end:
     rts
 
 
 ; sets the player's position onto the World
+.define PLAYER_XY       ZERO_2_1; 2 bytes
+.define NEXT_TILE_XY    ZERO_2_4 ; 2 bytes
 world_set_player:
 
-    stx ZERO_2_4
-    sty ZERO_2_5
+    stx NEXT_TILE_XY
+    sty NEXT_TILE_XY+1
 
-    ; restore the previous tile
-    ldx Tile_player_standing::addr
-    lda Tile_player_standing::addr+1
-    stx ZERO_2_1
-    sta ZERO_2_1+1
+    ; restore the previous tile    
+    ldx Tile_player_standing_addr
+    lda Tile_player_standing_addr+1
+    stx PLAYER_XY
+    sta PLAYER_XY+1
     ldy #0
-    lda Tile_player_standing::actor
-    sta (ZERO_2_1), Y
-
+    lda Tile_player_standing_actor
+    sta (PLAYER_XY), Y
+    
     ; save the next tile
-    ldx ZERO_2_4
-    ldy ZERO_2_5
+    ldx NEXT_TILE_XY
+    ldy NEXT_TILE_XY+1
     jsr Compute_Maze_Addr   ; get's player's position address in memory
-    stx Tile_player_standing::addr
-    sta Tile_player_standing::addr+1
-    stx ZERO_2_1
-    sta ZERO_2_1+1
+    stx Tile_player_standing_addr
+    sta Tile_player_standing_addr+1
+    stx PLAYER_XY
+    sta PLAYER_XY+1
     ldy #0
-    lda (ZERO_2_1), y
-    sta Tile_player_standing::actor
+    lda (PLAYER_XY), y
+    sta Tile_player_standing_actor
+    ; if an object was picked
+    ; override to force save a floor tile
+    lda World_PickedObject
+    cmp #TRUE
+    bne no_object_picked
+        lda #eACTORTYPES::FLOOR_2
+        sta Tile_player_standing_actor
+        lda #FALSE
+        sta World_PickedObject
+    no_object_picked:
 
     ; sets the player on the tile
-    lda #ACTORS::PLAYER 
-    sta (ZERO_2_1), y
+    lda #eACTORTYPES::PLAYER 
+    sta (PLAYER_XY), y
 
     ; restore the given locations
-    ldx ZERO_2_4
-    ldy ZERO_2_5
+    ldx NEXT_TILE_XY
+    ldy NEXT_TILE_XY+1
 
     rts
 
@@ -147,7 +168,7 @@ Compute_Maze_Addr:
 
 
 
-.DATA
+.BSS
 
 .align 256
 

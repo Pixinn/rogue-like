@@ -110,9 +110,8 @@
 ; *********** CUSTOM ROUTINES *********
 .define FROM     ZERO_2_1   ; 2 bytes
 .define TO       ZERO_2_3   ; 2 bytes
-.define SIZEH    ZERO_8_1
-.define SIZEL    ZERO_8_2
-.import memcpy
+.define SIZEH    ZERO_8_2
+.define SIZEL    ZERO_8_1
 
 
 ; ************ MACROS ***********

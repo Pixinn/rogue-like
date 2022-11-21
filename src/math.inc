@@ -32,13 +32,13 @@
 .endmacro
 
 
-.macro ADD16 addr, cste
+.macro ADD16 addr, csteL, csteH
     clc
     lda addr
-    adc cste
+    adc csteL
     sta addr
     lda addr+1
-    adc #0
+    adc csteH
     sta addr+1
 .endmacro
 

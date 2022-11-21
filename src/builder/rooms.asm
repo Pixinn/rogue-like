@@ -19,6 +19,7 @@
 .include "../math.inc"
 .include "../common.inc"
 .include "../world/world.inc"
+.include "../actors/actors.inc"
 
 .export Carve_Rooms
 .export Connect_Rooms
@@ -33,6 +34,7 @@
 .BSS
 
 ; Configration to build rooms
+; FIXME??? CA65 will locate this struct at address 0 !!!
 .struct Config_Room
     width_min   .byte
     width_max   .byte
@@ -73,18 +75,17 @@ Carve_Rooms:
         lda NB_ROOMS_OK ; NB_ROOMS_OK*sizeof(room_t) -> X
         asl
         asl
-        tax
+        tax        
 
         jsr _Build_Room
 
         lda NB_ROOMS_OK
         jsr _Is_intersecting
-        cmp TRUE  ; not intersecting with another room?
+        cmp #TRUE  ; not intersecting with another room?
         beq loop_rooms
-
+    
         inc NB_ROOMS_OK
-        clc
-        bcc loop_rooms
+        jmp loop_rooms
 
     end_loop_rooms:
 
@@ -106,8 +107,7 @@ Carve_Rooms:
         
     end_loop_draw_rooms:
 
-
-    lda NB_ROOMS_OK
+    lda NB_ROOMS_OK    
 
     rts
 .undefine NB_ATTEMPTS
@@ -142,7 +142,7 @@ _Draw_Room:
     lda Rooms+1, X    ; room->width
     sta LINE_LENGTH    
     loop_draw_line:
-        lda #ACTORS::FLOOR_1
+        lda #eACTORTYPES::FLOOR_1
         ldy #0
         loop_draw_tile:
             sta (ADDR_WORLD), Y
@@ -272,7 +272,7 @@ _Is_intersecting:
     cmp #0
     bne compare
     ; first room
-    lda FALSE
+    lda #FALSE
     clc
     bcc end_intersecting ; branch always
 
@@ -308,7 +308,7 @@ compare:
         cmp Rooms+3, Y  ; room->y
         bcc false       ; branch if new_room->y + new_room->height < room->y
         ; all test are true: rooms are intersecting
-        lda TRUE ; return value
+        lda #TRUE ; return value
         clc
         bcc end_intersecting
 
@@ -320,7 +320,7 @@ compare:
         dec NB_ROOMS
         bne loop_intersecting
 
-    lda FALSE ; no room intersects
+    lda #FALSE ; no room intersects
 
 end_intersecting:
     rts
@@ -554,7 +554,7 @@ Connect_Rooms:
             bcc loop_first_door ; nb_walkable < 2
         inc NB_DOORS
         ldy #WIDTH_WORLD
-        lda #ACTORS::FLOOR_1
+        lda #eACTORTYPES::FLOOR_1
         sta (PTR_TILE), Y
 
         ; # Opening the other doors
@@ -597,7 +597,7 @@ Connect_Rooms:
             bcc loop_other_doors ; always jump as the previous bcs failed
         carve_a_door:
             ldy #WIDTH_WORLD
-            lda #ACTORS::FLOOR_1
+            lda #eACTORTYPES::FLOOR_1
             sta (PTR_TILE), Y
             inc NB_DOORS
             jmp loop_other_doors
@@ -621,7 +621,7 @@ Connect_Rooms:
 _nb_walkable:
     lda #0
     sta NB_WALKABLE
-    lda #ACTORS::FLOOR_1
+    lda #eACTORTYPES::FLOOR_1
     tst_up:
         ldy #0
         cmp (PTR_TILE), Y 

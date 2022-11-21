@@ -17,133 +17,119 @@
 .include "../common.inc"
 .include "../memory.inc"
 .include "../random.inc"
-.include "../builder/actors.inc"
+.include "../math.inc"
+.include "../actors/actors.inc"
 .include "../builder/builder.inc"
+.include "../io/files.inc"
 .include "level_private.inc"
 
 ; code
 .export levels_init
 .export level_enter
 .export level_exit
+.export level_get_config_offset
+.export level_reset_states
 ; data
-.export Levels
+.export LevelConfigs
+.export NbLevels
 .export CurrentLevel
 .export NextLevel
 .export ExitLevel
+.export LevelIsBuilt
 
 .import player_init
+.import ActorsInLevel
+.import ActorPositions
+.import World
 
 .BSS
 
 CurrentLevel:   .res    1
+NbLevels:       .res    1
 NextLevel:      .res    1
 ExitLevel:      .res    1
-
-.align 256          ; to be sure it is accessible with an offset
-Levels:         .res    SIZEOF_CONF_LEVEL * NB_LEVELS
+LevelIsBuilt:   .res    1
 
 
+LevelConfigs:     .res    1 + NB_LEVELS * SIZEOF_CONF_LEVEL
 
-.CODE
+
+.segment "CODE2"
 
 
-.define NR_ACTORS ZERO_4_1
-.define NR_LEVELS ZERO_4_2
-; TODO Load a configuration file from disk!
+.define ACCUMULATOR         ZERO_9_4    ; 2 bytes
+
+; @param LevelNr in X
+_Set_Params_LoadSaveLevelActors:
+
+    ; compute offset in file
+    lda #0
+    sta ACCUMULATOR
+    sta ACCUMULATOR+1
+    beq end_loop_offset
+loop_offset: ; accumulating offsets
+    clc
+    lda ACCUMULATOR
+    adc #<(SIZEOF_ACTORS_T)
+    sta ACCUMULATOR
+    lda ACCUMULATOR+1
+    adc #>(SIZEOF_ACTORS_T)
+    sta ACCUMULATOR+1
+    dex
+    bne loop_offset
+end_loop_offset:
+    ; set function parameters
+    sta Param_FileOffset+3
+    lda ACCUMULATOR
+    sta Param_FileOffset+2
+    lda #<Str_FileLevelsActors
+    sta Param_FileOpen+1
+    lda #>Str_FileLevelsActors
+    sta Param_FileOpen+2
+    lda #<ActorsInLevel
+    sta Param_FilesReadWrite+2
+    lda #>ActorsInLevel
+    sta Param_FilesReadWrite+3
+
+    rts
+
+
+.define NR_LEVELS ZERO_4_1
 levels_init:
 
-    ldx #0
-    ldy #0
-    lda #NB_LEVELS
+    ; file path
+    lda #<Str_FileLevelConfs
+    sta Param_FileOpen+1
+    lda #>Str_FileLevelConfs
+    sta Param_FileOpen+2
+    ; read buffer
+    lda #0
+    sta Param_FileOffset+2
+    sta Param_FileOffset+3
+    sta Param_FileOffset+4
+    lda #<LevelConfigs
+    sta Param_FilesReadWrite+2
+    lda #>LevelConfigs
+    sta Param_FilesReadWrite+3
+    lda #<(1 + SIZEOF_CONF_LEVEL * NB_LEVELS)
+    sta Param_FilesReadWrite+4
+    lda #>(1 + SIZEOF_CONF_LEVEL * NB_LEVELS)
+    sta Param_FilesReadWrite+5
+
+    ; load
+    jsr ReadFile
+    
+    ; exploit
+    lda LevelConfigs
+    sta NbLevels
     sta NR_LEVELS
+    inc NR_LEVELS
 
-level_conf_default:
-    ; level_nr
-    tya
-    iny
-    sta Levels, X
-    ; is_built
-    lda FALSE
-    sta Levels+1, x
-    ; seed
-    lda #0
-    sta Levels+2, X
-    sta Levels+3, X
-    sta Levels+4, X
-    sta Levels+5, X  
-    ; size
-    ; pos_player_enter
-    lda #$FF
-    sta Levels+7, X
-    sta Levels+8, X  
-    ; actors
-    txa
-    clc
-    adc #9
-    tax
-    lda #eACTORSREACTIVE::AA_NB
-    sta NR_ACTORS
-    lda #0
-
-    level_conf_actors:        
-        sta  Levels, X
-        inx
-        dec NR_ACTORS
-        bne level_conf_actors
-
-    dec NR_LEVELS
-    bne level_conf_default
-
-    ; level #0
-    ldx #0
-    lda #1
-    sta Levels + 9 + eACTORSREACTIVE::AA_STAIRUP, X
-    lda #LEVELSIZE::TINY
-    sta Levels+6, X ; size
-    ; level #1
-    clc
-    txa
-    adc #SIZEOF_CONF_LEVEL
-    tax
-    lda #1
-    sta Levels + 9 + eACTORSREACTIVE::AA_STAIRUP, X
-    sta Levels + 9 + eACTORSREACTIVE::AA_STAIRDOWN, X
-    lda #LEVELSIZE::SMALL
-    sta Levels+6, X ; size
-    ; level #2
-    clc
-    txa
-    adc #SIZEOF_CONF_LEVEL
-    tax
-    lda #1
-    sta Levels + 9 + eACTORSREACTIVE::AA_STAIRUP, X
-    sta Levels + 9 + eACTORSREACTIVE::AA_STAIRDOWN, X
-    lda #LEVELSIZE::NORMAL
-    sta Levels+6, X ; size
-    ; level #3
-    clc
-    txa
-    adc #SIZEOF_CONF_LEVEL
-    tax
-    lda #1
-    sta Levels + 9 + eACTORSREACTIVE::AA_STAIRUP, X
-    sta Levels + 9 + eACTORSREACTIVE::AA_STAIRDOWN, X
-    lda #LEVELSIZE::BIG
-    sta Levels+6, X ; size
-    ; level #4
-    clc
-    txa
-    adc #SIZEOF_CONF_LEVEL
-    tax
-    lda #1
-    sta Levels + 9 + eACTORSREACTIVE::AA_STAIRDOWN, X
-    lda #LEVELSIZE::HUGE
-    sta Levels+6, X ; size
-
-    ; global vars
+; global vars
     lda #0
     sta CurrentLevel
-    lda FALSE
+    sta NextLevel
+    lda #FALSE
     sta ExitLevel
 
     rts
@@ -151,85 +137,51 @@ level_conf_default:
 
 
 ; @param: Uses NextLevel as level number
-.define LEVEL_CONF_OFFSET ZERO_3
+.define LEVEL_STATE_OFFSET  ZERO_9_1
+.define ADDR_LEVEL_CONF     ZERO_9_2    ; 2 bytes
 level_enter:
 
-    ; debug:
-    ; lda NextLevel
-    ; cmp #0
-    ; bne debug_end
-    ;     jsr Random8
-    ; debug_end:
+    lda NextLevel
+    jsr LoadState
 
-    jsr Random8_SaveRandomness
+    lda LevelIsBuilt
+    cmp #TRUE
+    beq level_was_built
 
-    ; get the level conf
-    lda #0
-    ldx #0
-    clc
-    get_level_conf:
-        tay
-        lda Levels, X
-        cmp NextLevel
-        beq end_idx_level
-        tya
-        adc #SIZEOF_CONF_LEVEL
+level_generation:
+
+        ; compute offset to level config
+        lda NextLevel
+        jsr level_get_config_offset
+        pha
+        clc
+        txa
+        adc #<LevelConfigs
+        sta ADDR_LEVEL_CONF
+        pla
+        adc #>LevelConfigs
+        sta ADDR_LEVEL_CONF+1    
+
+        ; init maze size
+        ldy #1
+        lda (ADDR_LEVEL_CONF), Y ; size
         tax
-        bcc get_level_conf
-    end_idx_level:
-    stx LEVEL_CONF_OFFSET
+        tay
+        jsr Init_Dimensions_Maze
 
-    ; init seed for the level if not already built
-    lda Levels+1, X   ; is_built
-    cmp FALSE
-    bne end_init_seed
+        ; player position returned in X and Y    
+        jsr Build_Level
+        jsr player_init     ; param: player pos in X and Y      
 
-    jsr Random8
-    ldx LEVEL_CONF_OFFSET
-    sta Levels+2, X ; seed[0]
-    jsr Random8
-    ldx LEVEL_CONF_OFFSET
-    sta Levels+3, X ; seed[1]
-    jsr Random8
-    ldx LEVEL_CONF_OFFSET
-    sta Levels+4, X ; seed[2]
-    jsr Random8
-    ldx LEVEL_CONF_OFFSET
-    sta Levels+5, X ; seed[3]
-end_init_seed:
+level_was_built:
 
-    ; init the randomness with the values for the level
-    lda Levels+2, X ; seed[0]
-    sta SEED0
-    lda Levels+3, X ; seed[1]
-    sta SEED1
-    lda Levels+4, X ; seed[2]
-    sta SEED2
-    lda Levels+5, X ; seed[3]
-    sta SEED3
-    jsr Random8_Init
-    
-    ; init maze size
-    ldx LEVEL_CONF_OFFSET
-    txa
-    pha ; save LEVEL_CONF_OFFSET as its ZP will be overwritten
-    lda Levels+6, X ; size
-    tax
-    tay
-    jsr Init_Dimensions_Maze
+        ldx ActorPositions + eACTORTYPES::PLAYER
+        ldy ActorPositions + eACTORTYPES::PLAYER + 1
+        jsr player_init
 
-    ; player position returned in X and Y
-    jsr Build_Level
-    jsr player_init     ; param: player pos in X and Y
+level_enter_end:
 
-    jsr Random8_RestoreRandomness
-
-    pla ; restore LEVEL_CONF_OFFSET
-    tax
-    lda TRUE
-    sta Levels+1, X; is_built
-
-    lda FALSE
+    lda #FALSE
     sta ExitLevel
 
     lda NextLevel
@@ -238,28 +190,39 @@ end_init_seed:
     rts
 
 
-.import Player_XY
+.define Player_XY ActorPositions + eACTORTYPES::PLAYER
 level_exit:
 
-    ; get the level conf
-    lda #0
-    ldx #0
-    clc
-    get_level_conf_2:
-        tay
-        lda Levels, X
-        cmp CurrentLevel
-        beq end_idx_level_2
-        tya
-        adc #SIZEOF_CONF_LEVEL
-        tax
-        bcc get_level_conf_2
-    end_idx_level_2:
+    lda CurrentLevel
+    jsr SaveState
 
-    ; save player pos in conf
-    lda Player_XY
-    sta Levels+7, X
-    lda Player_XY + 1
-    sta Levels+8, X 
+    rts
+
+; @param Level_Nr in A
+; @return Config offset for the level in X
+level_get_config_offset:
+
+    sta FAC1
+    ldx #SIZEOF_CONF_LEVEL
+    stx FAC2
+    jsr mul8
+    ; first byte of conf is the number of levels
+    pha
+    clc
+    txa
+    adc #1
+    tax
+    pla
+    adc #0
+
+    rts
+
+; @brief reset the states of all levels
+level_reset_states:
+    
+    lda #0
+    sta CurrentLevel
+    lda #NB_LEVELS
+    jsr ResetIsBuilt
 
     rts

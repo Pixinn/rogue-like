@@ -14,26 +14,12 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-; Must be the same as in memory.inc !!
-.define ZERO_2_1    $19
-.define ZERO_2_3    $1B
-.define ZERO_8_1    $D6 
-.define ZERO_8_2    $D7 
-.define FROM     ZERO_2_1
-.define TO       ZERO_2_3
-.define SIZEH    ZERO_8_1
-.define SIZEL    ZERO_8_2
+.include "memory.inc"
 
 .export memcpy
-.export TXT1_LINES
+.export memset
+.export meminit
 
-
-
-.DATA
-TXT1_LINES:
-.word  $400, $480, $500, $580, $600, $680, $700, $780, $428, $4A8, $528, $5A8, $628, $6A8
-.word  $728, $7A8, $450, $4D0, $550, $5D0, $650, $6D0, $750, $7D0
 
 .CODE
 
@@ -70,3 +56,83 @@ MU3:     DEY
          DEX
          BNE MU1
          RTS
+
+; Sets a block of memory to the provided value 
+;
+; A    = value to set
+; TO   = memory to be set starting address
+; SIZE = number of bytes to set. Max value: $FEFF
+;
+; !!! TO and SIZE are overwritten !!
+memset:
+    cmp SIZEH
+    beq memset_remain
+memset_loop_hi:
+    ldy #$FF
+memset_loop_low:
+    sta (TO),Y
+    dey
+    bne memset_loop_low
+    sta (TO),Y
+    inc TO+1        ; next 256 byte block
+    dec SIZEH
+    bne memset_loop_hi
+memset_remain:
+    ldy SIZEL
+    cpy #0
+    beq memset_end
+memset_loop_remain:
+    sta (TO),Y
+    dey
+    bne memset_loop_remain
+memset_end:
+    rts
+
+; DEBUG: zeros the useful memory locations
+meminit:
+
+    lda #0
+    sta TO
+    ldx #$60
+    stx TO+1
+    ldx #$FF
+    stx SIZEL
+    ldx #$05
+    stx SIZEH
+    jsr memset
+
+    lda #0
+    sta ZERO_2_1
+    sta ZERO_2_2
+    sta ZERO_2_3
+    sta ZERO_2_4
+    sta ZERO_2_5
+    sta ZERO_2_6
+    sta ZERO_3
+    sta ZERO_4_1
+    sta ZERO_4_2
+    sta ZERO_4_3
+    sta ZERO_4_4
+    sta ZERO_4_5
+    sta ZERO_5_1
+    sta ZERO_5_2
+    sta ZERO_5_3
+    sta ZERO_5_4
+    sta ZERO_5_5
+    sta ZERO_5_6
+    sta ZERO_7_1
+    sta ZERO_7_2
+    sta ZERO_8_1
+    sta ZERO_8_2
+    sta ZERO_9_1
+    sta ZERO_9_2
+    sta ZERO_9_3
+    sta ZERO_9_4
+    sta ZERO_9_5
+    sta ZERO_9_6
+    sta ZERO_9_7
+    sta ZERO_9_8
+    sta ZERO_9_9
+    sta ZERO_9_10
+
+    rts

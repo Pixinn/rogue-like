@@ -15,28 +15,11 @@
 
 
 
+; BEWARE: NB_LEVELS * SIZEOF_STATE_LEVEL shall not be > 256
+.define SIZEOF_STATE_LEVEL 7
 
-; typedef struct
-; {
-;   uint8_t level_nr;
-;   uint8_t is_built;
-;   uint8_t seed[4];                    //< seed used to build the level
-;   uint8_t size;                       //< eLEVELSIZE
-;   coords_t pos_player_enter;        //< position of player when entering the level (x,y)
-;   uint8_t actors[AA_NB];              //< number of reactive actors of each kind in the level
-; }
-; level_conf_t;
+.define SIZEOF_CONF_LEVEL 130 ;( NB_ACTORS_MAX + 2 )
+.define NB_LEVELS 3
 
-; BEWARE: NB_LEVELS * SIZEOF_CONF_LEVEL shall not be > 256
-.define SIZEOF_CONF_LEVEL 12
-.define NB_LEVELS 5
-
-.enum LEVELSIZE
-  TINY = 20
-  SMALL = 24
-  NORMAL = 32
-  BIG = 48
-  HUGE = 64
-.endenum
 
 

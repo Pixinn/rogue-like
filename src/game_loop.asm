@@ -13,7 +13,7 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+.include "actors/actors.inc"
 .include "world/level.inc"
 .include "world/world.inc"
 .include "display.inc"
@@ -34,23 +34,32 @@
 .import player_move_iny
 .import player_move_dex
 .import player_move_dey
-.import Player_XY
+.import ActorPositions
 ; world
 .import world_set_player
+; actors
+.import ActorPositions
 
 ; ************
 .include "builder/builder.inc"
 .import world_init
 .import player_init
 .import view_init
+.import Actors_Init
 ; ************
 
 
-.define KEY_UP      $C9
-.define KEY_LEFT    $CA
-.define KEY_DOWN    $CB
-.define KEY_RIGHT   $CC
-.define TAB         $89
+.define KEY_UP_UPP      $C9     ; 'I'
+.define KEY_UP_LOW      $E9     ; 'i'
+.define KEY_LEFT_UPP    $CA     ; 'J'
+.define KEY_LEFT_LOW    $EA     ; 'j'
+.define KEY_DOWN_UPP    $CB     ; 'K'
+.define KEY_DOWN_LOW    $EB     ; 'k'
+.define KEY_RIGHT_UPP   $CC     ; 'L'
+.define KEY_RIGHT_LOW   $EC     ; 'l'
+.define TAB             $89     ; '\t'
+
+.define Player_XY ActorPositions + eACTORTYPES::PLAYER
 
 
 .CODE
@@ -63,23 +72,20 @@
 game_loop:
 
     jsr levels_init
-
-    lda #0
-    sta NextLevel
+    jsr Actors_Init
 
     level_loop:
         jsr level_enter ; Uses NextLevel as level number
 
-        ; *****************
-    ;   jsr Build_Level
-        jsr Display_Map_Init
-        ; ldx Rooms+2 ; Rooms[0].x
-        ; ldy Rooms+3 ; Rooms[0].y
-        ; jsr player_init
+        ; *****************    
+        jsr Display_Map_Init   
+
+        ldx Player_XY
+        ldy Player_XY + 1
         jsr world_init 
+        
         jsr view_init
         ; *****************
-
 
         ldx Player_XY
         ldy Player_XY+1
@@ -97,7 +103,7 @@ game_loop:
             jsr key_action
 
             lda ExitLevel
-            cmp TRUE
+            cmp #TRUE
             bne kbd_loop
 
             jsr level_exit
@@ -108,16 +114,29 @@ game_loop:
 
     ; action on key pressed
 key_action:
-    cmp #KEY_UP
+    cmp #KEY_UP_UPP
     beq move_up
-    cmp #KEY_RIGHT
+    cmp #KEY_UP_LOW
+    beq move_up
+
+    cmp #KEY_RIGHT_UPP
     beq move_right
-    cmp #KEY_DOWN
+    cmp #KEY_RIGHT_LOW
+    beq move_right
+
+    cmp #KEY_DOWN_UPP
     beq move_down
-    cmp #KEY_LEFT
+    cmp #KEY_DOWN_LOW
+    beq move_down
+
+    cmp #KEY_LEFT_UPP
     beq move_left
+    cmp #KEY_LEFT_LOW
+    beq move_left
+
     cmp #TAB
     beq display_map
+
     rts
 
 move_up:
@@ -125,28 +144,24 @@ move_up:
     ldy Player_XY+1
     dey
     jsr player_move
-    ; jsr player_move_dey
     jmp end_action_move
 move_right:
     ldx Player_XY    
     ldy Player_XY+1
     inx
     jsr player_move
-    ; jsr player_move_inx
     jmp end_action_move
 move_down:
     ldx Player_XY
     ldy Player_XY+1
     iny
     jsr player_move
-    ; jsr player_move_iny
     jmp end_action_move
 move_left:
     ldx Player_XY
     ldy Player_XY+1
     dex
     jsr player_move
-    ; jsr player_move_dex
     jmp end_action_move
 
 end_action_move:            ; update player/view coordinates and refresh the display

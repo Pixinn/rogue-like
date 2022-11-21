@@ -18,6 +18,7 @@
 .include "../math.inc"
 .include "../common.inc"
 .include "../world/world.inc"
+.include "../actors/actors.inc"
 
 
 .export Grow_Maze
@@ -121,7 +122,7 @@
 .macro ISWALKABLE offset
     ldy offset
     lda (PTR_NEW_TILE),Y
-    cmp #ACTORS::WALKABLE+1
+    cmp #eACTORTYPES::LAST_FLOOR+1
     bcc cannot_carve 
 .endmacro
 
@@ -139,27 +140,27 @@
 
     ldy OFFSET_NIL
     lda (PTR_NEW_TILE),Y
-    cmp #ACTORS::WALKABLE
+    cmp #eACTORTYPES::LAST_FLOOR
     bcc end_loop_stack
 
     ldy OFFSET_UP
     lda (PTR_NEW_TILE),Y
-    cmp #ACTORS::WALKABLE
+    cmp #eACTORTYPES::LAST_FLOOR
     bcc end_loop_stack
 
     ldy OFFSET_RIGHT
     lda (PTR_NEW_TILE),Y
-    cmp #ACTORS::WALKABLE
+    cmp #eACTORTYPES::LAST_FLOOR
     bcc end_loop_stack
 
     ldy OFFSET_DOWN
     lda (PTR_NEW_TILE),Y
-    cmp #ACTORS::WALKABLE
+    cmp #eACTORTYPES::LAST_FLOOR
     bcc end_loop_stack
 
     ldy OFFSET_LEFT
     lda (PTR_NEW_TILE),Y
-    cmp #ACTORS::WALKABLE
+    cmp #eACTORTYPES::LAST_FLOOR
     bcc end_loop_stack
 
 .endmacro
@@ -194,7 +195,7 @@ loop_grow_maze:
 
         ; carve
         ldy #WIDTH_WORLD
-        lda #ACTORS::FLOOR_1
+        lda #eACTORTYPES::FLOOR_1
         sta (PTR_NEW_TILE),Y
 
 
@@ -236,7 +237,7 @@ loop_grow_maze:
             carve_the_tile:
             ; carve the tile
             ldy #0
-            lda #ACTORS::FLOOR_1
+            lda #eACTORTYPES::FLOOR_1
             sta (PTR_NEW_TILE),Y
             jmp  loop_stack
         end_loop_stack:
@@ -438,7 +439,7 @@ _follow_dead_end:
 
     loop_follow:
         ldy #WIDTH_WORLD
-        lda #ACTORS::WALL_1
+        lda #eACTORTYPES::WALL_1
         sta (PTR_TILE), Y
 
         lda PTR_NEXT_TILE
@@ -462,7 +463,7 @@ _follow_dead_end:
     rts
     
 
-.define ADD_FACTOR  ZERO_4_1
+.define ADD_FACTOR  ZERO_4_3
 ; REM: PTR_TILE is already offsetted by -WIDTH_WORLD
 ; for easy access to adjacent tiles by indirect indexing
 ; Returns : NB_WALLS >= 3 if it is a dead end
@@ -474,7 +475,7 @@ _is_tile_dead_end:
     sty ADD_FACTOR
 
     ; Returns if the tile is a wall
-    lda #ACTORS::WALKABLE
+    lda #eACTORTYPES::LAST_FLOOR
     cmp (PTR_TILE), Y
     bcc end_tst_up_tile
 

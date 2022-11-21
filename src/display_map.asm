@@ -16,10 +16,11 @@
 
 
 .include "world/world.inc"
+.include "actors/actors.inc"
+.include "io/gr.inc"
 .include "memory.inc"
 .include "math.inc"
 .include "monitor.inc"
-.include "io/gr.inc"
 
 ; inits display of map
 .export Display_Map_Init
@@ -201,11 +202,12 @@ quit:
     rts
 
 .import World
-.define SRC_LINE_UP ZERO_7_1
+.define SRC_LINE_UP   ZERO_7_1
 .define SRC_LINE_DOWN ZERO_8_1
-.define SRC_OFFSET ZERO_5_5
-.define DST_GR1 ZERO_5_5
-.define CPT_FILL ZERO_5_4
+.define SRC_OFFSET    ZERO_5_5
+.define DST_GR1       ZERO_5_5
+.define CPT_FILL      ZERO_5_4
+.define TMP           ZERO_9_10
 
 Addr_GR1: ; 3 address blocks to fill GR1 (address -1), stored in reversed endianess.
     .word $4F04, $2704, $FF03
@@ -229,7 +231,7 @@ Addr_GR1: ; 3 address blocks to fill GR1 (address -1), stored in reversed endian
 
 ld_src:
     ; compute offset
-    stx ZERO_5_4
+    stx TMP
     sty FAC1
     lda #WIDTH_WORLD
     sta FAC2
@@ -237,7 +239,7 @@ ld_src:
     sta SRC_OFFSET+1
     txa
     clc
-    adc ZERO_5_4
+    adc TMP
     sta SRC_OFFSET
     lda SRC_OFFSET+1
     adc #0
@@ -277,11 +279,22 @@ copy_8x2_lines: ; call 3 times to fill the screen
     ldy #DBG_DISP_WIDTH
     copy_2_lines:
         lda (SRC_LINE_DOWN),Y
+        cmp #eACTORTYPES::FIRST_DYNAMIC
+        bcc keep_color_1
+        lda #$F ; white
+    keep_color_1:
         asl 
         asl 
         asl 
-        asl 
-        ora (SRC_LINE_UP),Y
+        asl
+        sta TMP
+        lda (SRC_LINE_UP),Y
+        cmp #eACTORTYPES::FIRST_DYNAMIC
+        bcc keep_color_2
+        lda #$F ; white
+    keep_color_2:
+        and #$F
+        ora TMP    
         sta (DST_GR1), Y
         dey 
         bne copy_2_lines
